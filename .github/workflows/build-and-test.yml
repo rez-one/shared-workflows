@@ -1,8 +1,17 @@
 name: Build and Test Quality Gate
-on: [pull_request, workflow_call]
+on:
+  workflow_call:
+    secrets:
+      SSH_JUMP_HOST_USER:
+        required: true
+      SSH_JUMP_HOST_KEY:
+        required: true
+      SSH_JUMP_HOST_IP:
+        required: true
+
 jobs:
-  Build-And-Test:
-    name: Build-And-Test
+  build-and-test:
+    name: Build and Test Quality Gate Job
     runs-on: ubuntu-latest
     steps:
 
