@@ -86,16 +86,16 @@ jobs:
           ls ${{ github.workspace }}
       - run: echo "🍏 This job's status is ${{ job.status }}."
 
-      - name: Count Commits
-        run: |
-          git rev-list HEAD ^origin/${{github.base_ref }}
-          echo "REV_LIST_COUNT=$(git rev-list --count HEAD ^origin/${{github.base_ref }})" >> $GITHUB_ENV
+      #- name: Count Commits
+      #  run: |
+      #    git rev-list HEAD ^origin/${{github.base_ref }}
+      #    echo "REV_LIST_COUNT=$(git rev-list --count HEAD ^origin/${{github.base_ref }})" >> $GITHUB_ENV
 
-      - name: Fail if more than one commit
-        if: env.REV_LIST_COUNT > 2
-        run: |
-          echo "This PR has more than one commit"
-          echo "Squash your commits before pushing"
-          echo "  git rebase -i origin/${{github.base_ref }} "
-          echo "  git push --force "
-          exit -1
+      #- name: Fail if more than one commit
+      #  if: env.REV_LIST_COUNT > 2
+      #  run: |
+      #    echo "This PR has more than one commit"
+      #    echo "Squash your commits before pushing"
+      #    echo "  git rebase -i origin/${{github.base_ref }} "
+      #    echo "  git push --force "
+      #    exit -1
