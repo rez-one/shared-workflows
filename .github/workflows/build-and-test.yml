@@ -59,7 +59,7 @@ jobs:
       - name: Build with Gradle
         uses: gradle/gradle-build-action@v2
         with:
-          arguments: build --debug
+          arguments: buildImage --debug --stacktrace
 
       #      - name: Publish Unit Test Results
       #        uses: EnricoMi/publish-unit-test-result-action@v1
