@@ -12,7 +12,7 @@ on:
       branchesToPublishArtifacts:
         description: 'Branches To Publish Artifacts'
         required: false
-        default: "['main', 'master', 'qa', 'dev']"
+        default: '["main", "master", "qa", "dev"]'
         type: string
 
 jobs:
@@ -88,7 +88,7 @@ jobs:
 
       - name: Publish Artifacts
         uses: gradle/gradle-build-action@v2
-        if: contains(inputs.branchesToPublishArtifacts, steps.extract_branch_name.outputs.branch_name)
+        if: contains(fromJSON(inputs.branchesToPublishArtifacts), steps.extract_branch_name.outputs.branch_name)
         with:
           arguments: publish
 
