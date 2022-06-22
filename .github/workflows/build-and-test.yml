@@ -84,13 +84,18 @@ jobs:
         with:
           report_paths: '**/build/test-results/test/TEST-*.xml'
 
-      - run: echo "Publishing artifacts configured for branches - ${{ inputs.branchesToPublishArtifacts }}"
+      - run: echo "JAR publishing configured for branches - ${{ inputs.branchesToPublishArtifacts }}"
 
-      - name: Publish Artifacts
+      - name: Publish JAR Artifacts
         uses: gradle/gradle-build-action@v2
         if: contains(fromJSON(inputs.branchesToPublishArtifacts), steps.extract_branch_name.outputs.branch_name)
         with:
           arguments: publish
+
+      - name: Publish Image to GCR
+        uses: gradle/gradle-build-action@v2
+        with:
+          arguments: publishDockerImage
 
       #      - name: Test Report
       #        uses: dorny/test-reporter@v1
