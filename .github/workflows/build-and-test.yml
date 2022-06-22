@@ -8,14 +8,24 @@ on:
         required: true
       SSH_JUMP_HOST_IP:
         required: true
+    inputs:
+      branchesToPublishArtifacts:
+        description: 'Branches To Publish Artifacts'
+        required: false
+        default: "['main', 'master', 'qa', 'dev']"
 
 jobs:
   build-and-test:
     name: Build and Test Quality Gate Job
     runs-on: ubuntu-latest
     steps:
+      - name: Extract branch name
+          shell: bash
+          run: echo "##[set-output name=branch_name;]$(echo ${GITHUB_REF#refs/heads/})"
+          id: extract_branch_name
 
-      - run: echo "🎉 The job was automatically triggered by a ${{ github.event_name }} event."
+      - run: echo "🎉 The job was automatically triggered in branch ${{ steps.extract_branch_name.outputs.branch_name }} by a ${{ github.event_name }} event."
+
       - name: Check out repository code
         uses: actions/checkout@v2
         with:
@@ -59,7 +69,7 @@ jobs:
       - name: Build with Gradle
         uses: gradle/gradle-build-action@v2
         with:
-          arguments: build
+          arguments: clean build
 
       #      - name: Publish Unit Test Results
       #        uses: EnricoMi/publish-unit-test-result-action@v1
@@ -72,6 +82,14 @@ jobs:
         if: always() # always run even if the previous step fails
         with:
           report_paths: '**/build/test-results/test/TEST-*.xml'
+
+      - run: echo "Publishing artifacts configured for branches - ${{ inputs.branchesToPublishArtifacts }}"
+
+      - name: Publish Artifacts
+        uses: gradle/gradle-build-action@v2
+        if: contains(inputs.branchesToPublishArtifacts, steps.extract_branch_name.outputs.branch_name)
+        with:
+          arguments: publish
 
       #      - name: Test Report
       #        uses: dorny/test-reporter@v1
