@@ -100,8 +100,6 @@ jobs:
         with:
           arguments: publish
 
-      - run: cat $HOME/.gcr/gcr_sa_key.json
-
       - name: Publish Image to GCR
         uses: gradle/gradle-build-action@v2
         with:
