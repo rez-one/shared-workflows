@@ -63,6 +63,13 @@ jobs:
           sudo echo "127.0.0.1 nexus.rez1.com nexus" | sudo tee -a /etc/hosts
           sudo ssh -4 -fN -F /home/runner/.ssh/config -L0.0.0.0:443:nexus.rez1.com:443 nexus
 
+      - name: Configure GCR
+        run: |
+          mkdir -p $HOME/.gcr/
+          echo "$GCR_CREDENTIALS" > $HOME/.gcr/gcr_sa_key.json
+          chmod 600 $HOME/.gcr/gcr_sa_key.json
+          END
+
       - name: docker compose up
         run: docker-compose up -d
       #      - name: netstat
@@ -93,14 +100,6 @@ jobs:
         if: contains(fromJSON(inputs.branchesToPublishArtifacts), steps.extract_branch_name.outputs.branch_name)
         with:
           arguments: publish
-
-      - name: Configure GCR
-        run: |
-          pwd
-          mkdir -p $HOME/.gcr/
-          echo "$GCR_CREDENTIALS" > $HOME/.gcr/gcr_sa_key.json
-          chmod 600 $HOME/.gcr/gcr_sa_key.json
-          END
 
       - name: Publish Image to GCR
         uses: gradle/gradle-build-action@v2
