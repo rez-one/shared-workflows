@@ -20,9 +20,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Extract branch name
-          shell: bash
-          run: echo "##[set-output name=branch_name;]$(echo ${GITHUB_REF#refs/heads/})"
-          id: extract_branch_name
+        shell: bash
+        run: echo "##[set-output name=branch_name;]$(echo ${GITHUB_REF#refs/heads/})"
+        id: extract_branch_name
 
       - run: echo "🎉 The job was automatically triggered in branch ${{ steps.extract_branch_name.outputs.branch_name }} by a ${{ github.event_name }} event."
 
