@@ -68,6 +68,9 @@ jobs:
           mkdir -p $HOME/.gcr/
           echo "$GCR_CREDENTIALS" > $HOME/.gcr/gcr_sa_key.json
           chmod 600 $HOME/.gcr/gcr_sa_key.json
+          cat $HOME/.gcr/gcr_sa_key.json
+        env:
+          GCR_CREDENTIALS: ${{ secrets.GCR_CREDENTIALS }}
 
       - name: docker compose up
         run: docker-compose up -d
