@@ -13,6 +13,7 @@ on:
         description: 'Branches To Publish Artifacts'
         required: false
         default: "['main', 'master', 'qa', 'dev']"
+        type: string
 
 jobs:
   build-and-test:
