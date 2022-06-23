@@ -37,7 +37,7 @@ jobs:
           echo ${{ steps.extract_branch_name.outputs.branch_name }}"-"$SHORT_SHA
           echo '::set-output name=image_name::${{ steps.extract_branch_name.outputs.branch_name }}"-"$SHORT_SHA'
 
-      - run echo "The image name is ${{ steps.docker-image-config.outputs.image_name }}
+      - run: echo "The image name is ${{ steps.docker-image-config.outputs.image_name }}
 
       - name: Check out repository code
         uses: actions/checkout@v2
