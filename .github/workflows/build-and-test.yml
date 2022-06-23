@@ -24,7 +24,9 @@ jobs:
     steps:
       - name: Extract branch name
         shell: bash
-        run: echo "##[set-output name=branch_name;]$(echo ${GITHUB_HEAD_REF#refs/heads/})"
+        run: |
+          echo "SHORT_SHA=`echo ${{ github.event.pull_request.head.sha }} | cut -c1-8`" >> $GITHUB_ENV
+          echo "##[set-output name=branch_name;]$(echo ${GITHUB_HEAD_REF#refs/heads/})"
         id: extract_branch_name
 
       - run: echo "🎉 The job was automatically triggered in branch ${{ steps.extract_branch_name.outputs.branch_name }} by a ${{ github.event_name }} event."
@@ -32,10 +34,9 @@ jobs:
       - name: Configure Docker Image
         id: 'docker-image-config'
         run: |
-          echo "GITHUB_SHORT_SHA=`echo ${{ github.sha }} | cut -c1-8`" >> $GITHUB_ENV
-          echo "$GITHUB_SHORT_SHA"
-          echo ${{ steps.extract_branch_name.outputs.branch_name }}"-"$GITHUB_SHORT_SHA
-          echo '::set-output name=image_name::${{ steps.extract_branch_name.outputs.branch_name }}"-"$GITHUB_SHORT_SHA'
+          echo "$SHORT_SHA"
+          echo ${{ steps.extract_branch_name.outputs.branch_name }}"-"$SHORT_SHA
+          echo '::set-output name=image_name::${{ steps.extract_branch_name.outputs.branch_name }}"-"$SHORT_SHA'
 
       - run: echo "The image name is ${{ steps.docker-image-config.outputs.image_name }}
 
