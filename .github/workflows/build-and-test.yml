@@ -29,7 +29,7 @@ jobs:
           echo "##[set-output name=branch_name;]$(echo ${GITHUB_HEAD_REF#refs/heads/})"
         id: extract_git_branch_info
 
-      - run: echo "🎉 The job was automatically triggered for the commit ${SHORT_SHA} in branch ${{ steps.extract_git_branch_info.outputs.branch_name }} by a ${{ github.event_name }} event."
+      - run: echo "🎉 The job was automatically triggered in branch ${{ steps.extract_git_branch_info.outputs.branch_name }} by a ${{ github.event_name }} event."
 
       - name: Check out repository code
         uses: actions/checkout@v2
