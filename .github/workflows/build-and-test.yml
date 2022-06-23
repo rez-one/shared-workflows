@@ -14,7 +14,7 @@ on:
       branchesToPublishArtifacts:
         description: 'Branches To Publish Artifacts'
         required: false
-        default: '["main", "master", "qa", "dev"]'
+        default: '["dev", "qa", "test", "uat", "main", "master"]'
         type: string
 
 jobs:
@@ -22,14 +22,14 @@ jobs:
     name: Build and Test Quality Gate Job
     runs-on: ubuntu-latest
     steps:
-      - name: Extract branch name
+      - name: Extract branch name and commit hash
         shell: bash
         run: |
           echo "SHORT_SHA=`echo ${{ github.event.pull_request.head.sha }} | cut -c1-8`" >> $GITHUB_ENV
           echo "##[set-output name=branch_name;]$(echo ${GITHUB_HEAD_REF#refs/heads/})"
-        id: extract_branch_name
+        id: extract_git_branch_info
 
-      - run: echo "🎉 The job was automatically triggered in branch ${{ steps.extract_branch_name.outputs.branch_name }} by a ${{ github.event_name }} event."
+      - run: echo "🎉 The job was automatically triggered in branch ${{ steps.extract_git_branch_info.outputs.branch_name }} by a ${{ github.event_name }} event."
 
       - name: Check out repository code
         uses: actions/checkout@v2
@@ -101,14 +101,14 @@ jobs:
 
       - name: Publish JAR Artifacts
         uses: gradle/gradle-build-action@v2
-        if: contains(fromJSON(inputs.branchesToPublishArtifacts), steps.extract_branch_name.outputs.branch_name)
+        if: contains(fromJSON(inputs.branchesToPublishArtifacts), steps.extract_git_branch_info.outputs.branch_name)
         with:
           arguments: publish
 
       - name: Configure Docker Image
         id: 'docker-image-config'
         run: |
-          echo '::set-output name=image_name::${{ steps.extract_branch_name.outputs.branch_name }}"-"${SHORT_SHA}'
+          echo '::set-output name=image_name::${{ steps.extract_git_branch_info.outputs.branch_name }}"-"${SHORT_SHA}'
 
       - run: echo "The docker image name is ${{ steps.docker-image-config.outputs.image_name }}"
 
