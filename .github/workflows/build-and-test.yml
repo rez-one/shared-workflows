@@ -106,10 +106,11 @@ jobs:
       - name: Configure Docker Image
         id: 'docker-image-config'
         run: |
+          echo ${SHORT_SHA}
           echo ${{ steps.extract_branch_name.outputs.branch_name }}"-"${SHORT_SHA}
           echo '::set-output name=image_name::${{ steps.extract_branch_name.outputs.branch_name }}"-"${SHORT_SHA}'
         env:
-          SHORT_SHA: ${{ github.event.pull_request.head.sha }}
+          SHORT_SHA: ${GITHUB_SHA}
 
       - name: Publish Image to GCR
         uses: gradle/gradle-build-action@v2
