@@ -103,10 +103,17 @@ jobs:
         with:
           arguments: publish
 
+      - name: Configure Docker Image
+        id: 'docker-image-config'
+        run: |
+          echo "GITHUB_SHORT_SHA=`echo ${{ github.event.pull_request.head.sha }} | cut -c1-8`" >> $GITHUB_ENV
+          echo '::set-output name=image_name::${{ steps.extract_branch_name.outputs.branch_name }}"-"${GITHUB_SHORT_SHA}'
+          echo ${{ steps.extract_branch_name.outputs.branch_name }}"-"${GITHUB_SHORT_SHA}
+
       - name: Publish Image to GCR
         uses: gradle/gradle-build-action@v2
         with:
-          arguments: publishDockerImage
+          arguments: publishDockerImage -PimageName=${{ steps.docker-image-config.outputs.image_name }}
 
       #      - name: Test Report
       #        uses: dorny/test-reporter@v1
