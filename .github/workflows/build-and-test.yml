@@ -116,7 +116,7 @@ jobs:
       - name: Publish Image to GCR
         uses: gradle/gradle-build-action@v2
         with:
-          arguments: publishDockerImage -PimageName="${{ steps.docker-image-config.outputs.image_name }}"
+          arguments: publishDockerImage -PimageName=${{ steps.docker-image-config.outputs.image_name }}
 
       #      - name: Test Report
       #        uses: dorny/test-reporter@v1
