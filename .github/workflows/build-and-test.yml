@@ -108,13 +108,13 @@ jobs:
       - name: Configure Docker Image
         id: 'docker-image-config'
         run: |
-          echo '::set-output name=image_name::${{ steps.extract_branch_name.outputs.branch_name }}"-"$SHORT_SHA'
-          echo "The docker image name is ${{ steps.extract_branch_name.outputs.branch_name }}"-"$SHORT_SHA"
+          echo '::set-output name=image_name::${{ steps.extract_branch_name.outputs.branch_name }}"-"${SHORT_SHA}'
+          echo "The docker image name is ${{ steps.extract_branch_name.outputs.branch_name }}"-"${SHORT_SHA}"
 
       - name: Publish Image to GCR
         uses: gradle/gradle-build-action@v2
         with:
-          arguments: publishDockerImage -PimageName="${{ steps.extract_branch_name.outputs.branch_name }}"-"$SHORT_SHA"
+          arguments: publishDockerImage -PimageName="${{ steps.extract_branch_name.outputs.branch_name }}"-"${SHORT_SHA}"
 
       #      - name: Test Report
       #        uses: dorny/test-reporter@v1
