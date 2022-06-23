@@ -109,8 +109,9 @@ jobs:
       - name: Configure Docker Image
         id: 'docker-image-config'
         run: |
-          echo '::set-output name=image_name::${{ steps.extract_git_branch_info.outputs.branch_name }}"-"${{ steps.extract_git_branch_info.outputs.short_sha }}'
-          echo "The docker image name is ${{ steps.docker-image-config.outputs.image_name }}"
+          echo '::set-output name=image_name::${{ steps.extract_git_branch_info.outputs.branch_name }}-${{ steps.extract_git_branch_info.outputs.short_sha }}'
+
+      - run: echo "The docker image name is ${{ steps.docker-image-config.outputs.image_name }}"
 
       - name: Publish Image to GCR
         uses: gradle/gradle-build-action@v2
