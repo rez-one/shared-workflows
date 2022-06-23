@@ -114,7 +114,7 @@ jobs:
       - name: Publish Image to GCR
         uses: gradle/gradle-build-action@v2
         with:
-          arguments: publishDockerImage -PimageName=$IMAGE_NAME
+          arguments: publishDockerImage -PimageName="$IMAGE_NAME"
         env:
           IMAGE_NAME: ${{ steps.docker-image-config.outputs.image_name }}
 
