@@ -113,11 +113,7 @@ jobs:
       - run: echo "The docker image name is ${{ steps.docker-image-config.outputs.image_name }}"
 
       - name: Publish Image to GCR
-        uses: gradle/gradle-build-action@v2
-        with:
-          arguments: publishDockerImage -PimageName="$IMAGE_NAME"
-        env:
-          IMAGE_NAME: ${{ steps.docker-image-config.outputs.image_name }}
+        run: ./gradlew publishDockerImage -PimageName="${{ steps.docker-image-config.outputs.image_name }}"
 
       #      - name: Test Report
       #        uses: dorny/test-reporter@v1
