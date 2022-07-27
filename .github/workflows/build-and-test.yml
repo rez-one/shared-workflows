@@ -27,10 +27,11 @@ jobs:
         run: |
           if [[ ${{ github.event_name }} == 'pull_request' ]]; then
             echo "##[set-output name=short_sha;]$(echo ${{ github.event.pull_request.head.sha }} | cut -c1-7)"
+            echo "##[set-output name=branch_name;]$(echo ${GITHUB_HEAD_REF#refs/heads/})"
           else
             echo "##[set-output name=short_sha;]$(echo ${{ github.sha }} | cut -c1-7)"
-          fi
-          echo "##[set-output name=branch_name;]$(echo ${GITHUB_HEAD_REF#refs/heads/})"
+            echo "##[set-output name=branch_name;]$(echo ${GITHUB_REF#refs/heads/})"
+          fi          
         id: extract_git_branch_info
 
       - run: echo "🎉 The job was automatically triggered for the commit ${{ steps.extract_git_branch_info.outputs.short_sha }} in branch ${{ steps.extract_git_branch_info.outputs.branch_name }} by a ${{ github.event_name }} event."
