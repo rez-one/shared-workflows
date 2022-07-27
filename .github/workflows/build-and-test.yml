@@ -25,7 +25,11 @@ jobs:
       - name: Extract branch name and commit hash
         shell: bash
         run: |
-          echo "##[set-output name=short_sha;]$(echo ${{ github.event.pull_request.head.sha }} | cut -c1-7)"
+          if [[ ${{ github.event_name }} == 'pull_request' ]]; then
+            echo "##[set-output name=short_sha;]$(echo ${{ github.event.pull_request.head.sha }} | cut -c1-7)"
+          else
+            echo "##[set-output name=short_sha;]$(echo ${{ github.sha }} | cut -c1-7)"
+          fi
           echo "##[set-output name=branch_name;]$(echo ${GITHUB_HEAD_REF#refs/heads/})"
         id: extract_git_branch_info
 
