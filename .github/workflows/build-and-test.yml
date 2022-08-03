@@ -28,8 +28,6 @@ jobs:
     env:
       ORG_GRADLE_PROJECT_nexusUsername: ${{ secrets.NEXUS_USERNAME }}
       ORG_GRADLE_PROJECT_nexusPassword: ${{ secrets.NEXUS_PASSWORD }}
-      ORG_GRADLE_PROJECT_nexusUn: dummy
-      nexusUn: dummy
       nexusUsername: ${{ secrets.NEXUS_USERNAME }}
       nexusPassword: ${{ secrets.NEXUS_PASSWORD }}
     steps:
@@ -96,28 +94,10 @@ jobs:
       #        run: |
       #          netstat -a -n | grep 8089
 
-      - name: "print users"
-        run: echo "JAR publishing by user - ${{ secrets.NEXUS_USERNAME }}  and  ${{ secrets.SSH_JUMP_HOST_USER }} "
-        env:
-          ORG_GRADLE_PROJECT_nexusUsername: ${{ secrets.NEXUS_USERNAME }}
-          ORG_GRADLE_PROJECT_nexusPassword: ${{ secrets.NEXUS_PASSWORD }}
-          ORG_GRADLE_PROJECT_nexusUn: dummy
-          nexusUn: dummy
-          nexusUsername: ${{ secrets.NEXUS_USERNAME }}
-          nexusPassword: ${{ secrets.NEXUS_PASSWORD }}
-
       - name: Build with Gradle
         uses: gradle/gradle-build-action@v2
         with:
           arguments: clean build --refresh-dependencies
-        env:
-          ORG_GRADLE_PROJECT_nexusUsername: ${{ secrets.NEXUS_USERNAME }}
-          ORG_GRADLE_PROJECT_nexusPassword: ${{ secrets.NEXUS_PASSWORD }}
-          ORG_GRADLE_PROJECT_nexusUn: dummy
-          nexusUn: dummy
-          nexusUsername: ${{ secrets.NEXUS_USERNAME }}
-          nexusPassword: ${{ secrets.NEXUS_PASSWORD }}
-
 
       #      - name: Publish Unit Test Results
       #        uses: EnricoMi/publish-unit-test-result-action@v1
@@ -137,14 +117,7 @@ jobs:
         uses: gradle/gradle-build-action@v2
         if: contains(fromJSON(inputs.branchesToPublishArtifacts), steps.extract_git_branch_info.outputs.branch_name)
         with:
-          arguments: publish -PnexusUn="dummy" -PnexusUsername=${{ secrets.NEXUS_USERNAME }} -PnexusPassword=${{ secrets.NEXUS_PASSWORD }}
-        env:
-          ORG_GRADLE_PROJECT_nexusUsername: ${{ secrets.NEXUS_USERNAME }}
-          ORG_GRADLE_PROJECT_nexusPassword: ${{ secrets.NEXUS_PASSWORD }}
-          ORG_GRADLE_PROJECT_nexusUn: dummy
-          nexusUn: dummy
-          nexusUsername: ${{ secrets.NEXUS_USERNAME }}
-          nexusPassword: ${{ secrets.NEXUS_PASSWORD }}
+          arguments: publish -PnexusUsername=${{ secrets.NEXUS_USERNAME }} -PnexusPassword=${{ secrets.NEXUS_PASSWORD }}
 
       - name: Configure Docker Image
         id: 'docker-image-config'
