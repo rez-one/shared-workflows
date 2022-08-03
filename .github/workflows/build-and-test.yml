@@ -115,7 +115,7 @@ jobs:
         uses: gradle/gradle-build-action@v2
         if: contains(fromJSON(inputs.branchesToPublishArtifacts), steps.extract_git_branch_info.outputs.branch_name)
         with:
-          arguments: publish
+          arguments: publish -PnexusUsername=${{ secrets.NEXUS_USERNAME }} -PnexusPassword=${{ secrets.NEXUS_PASSWORD }}
 
       - name: Configure Docker Image
         id: 'docker-image-config'
