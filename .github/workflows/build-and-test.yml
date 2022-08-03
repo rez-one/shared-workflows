@@ -10,6 +10,10 @@ on:
         required: true
       GCR_CREDENTIALS:
         required: true
+      NEXUS_USERNAME:
+        required: false
+      NEXUS_PASSWORD:
+        required: false
     inputs:
       branchesToPublishArtifacts:
         description: 'Branches To Publish Artifacts'
