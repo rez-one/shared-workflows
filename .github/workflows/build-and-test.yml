@@ -83,6 +83,12 @@ jobs:
         env:
           GCR_CREDENTIALS: ${{ secrets.GCR_CREDENTIALS }}
 
+      - name: docker compose up
+        run: docker-compose up -d
+      #      - name: netstat
+      #        run: |
+      #          netstat -a -n | grep 8089
+
       - name: "print users"
         run: echo "JAR publishing by user - ${{ secrets.NEXUS_USERNAME }}  and  ${{ secrets.SSH_JUMP_HOST_USER }} "
         env:
@@ -93,16 +99,18 @@ jobs:
           nexusUsername: ${{ secrets.NEXUS_USERNAME }}
           nexusPassword: ${{ secrets.NEXUS_PASSWORD }}
 
-      - name: docker compose up
-        run: docker-compose up -d
-      #      - name: netstat
-      #        run: |
-      #          netstat -a -n | grep 8089
-
       - name: Build with Gradle
         uses: gradle/gradle-build-action@v2
         with:
           arguments: clean build --refresh-dependencies
+        env:
+          ORG_GRADLE_PROJECT_nexusUsername: ${{ secrets.NEXUS_USERNAME }}
+          ORG_GRADLE_PROJECT_nexusPassword: ${{ secrets.NEXUS_PASSWORD }}
+          ORG_GRADLE_PROJECT_nexusUn: dummy
+          nexusUn: dummy
+          nexusUsername: ${{ secrets.NEXUS_USERNAME }}
+          nexusPassword: ${{ secrets.NEXUS_PASSWORD }}
+
 
       #      - name: Publish Unit Test Results
       #        uses: EnricoMi/publish-unit-test-result-action@v1
