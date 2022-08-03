@@ -83,6 +83,16 @@ jobs:
         env:
           GCR_CREDENTIALS: ${{ secrets.GCR_CREDENTIALS }}
 
+      - name: "print users"
+        run: echo "JAR publishing by user - ${{ secrets.NEXUS_USERNAME }}  and  ${{ secrets.SSH_JUMP_HOST_USER }} "
+        env:
+          ORG_GRADLE_PROJECT_nexusUsername: ${{ secrets.NEXUS_USERNAME }}
+          ORG_GRADLE_PROJECT_nexusPassword: ${{ secrets.NEXUS_PASSWORD }}
+          ORG_GRADLE_PROJECT_nexusUn: dummy
+          nexusUn: dummy
+          nexusUsername: ${{ secrets.NEXUS_USERNAME }}
+          nexusPassword: ${{ secrets.NEXUS_PASSWORD }}
+
       - name: docker compose up
         run: docker-compose up -d
       #      - name: netstat
@@ -107,16 +117,6 @@ jobs:
           report_paths: '**/build/test-results/test/TEST-*.xml'
 
       - run: echo "JAR publishing configured for branches - ${{ inputs.branchesToPublishArtifacts }}"
-
-      - name: "print users"
-        run: echo "JAR publishing by user - ${{ secrets.NEXUS_USERNAME }}  and  ${{ secrets.SSH_JUMP_HOST_USER }} "
-        env:
-          ORG_GRADLE_PROJECT_nexusUsername: ${{ secrets.NEXUS_USERNAME }}
-          ORG_GRADLE_PROJECT_nexusPassword: ${{ secrets.NEXUS_PASSWORD }}
-          ORG_GRADLE_PROJECT_nexusUn: dummy
-          nexusUn: dummy
-          nexusUsername: ${{ secrets.NEXUS_USERNAME }}
-          nexusPassword: ${{ secrets.NEXUS_PASSWORD }}
 
       - name: Publish JAR Artifacts
         uses: gradle/gradle-build-action@v2
