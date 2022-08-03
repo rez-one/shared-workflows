@@ -108,7 +108,7 @@ jobs:
 
       - run: echo "JAR publishing configured for branches - ${{ inputs.branchesToPublishArtifacts }}"
 
-      - run: echo "JAR publishing by user - ${{ secrets.NEXUS_USERNAME }}"
+      - run: echo "JAR publishing by user - ${{ secrets.NEXUS_USERNAME }}  and  ${{ secrets.SSH_JUMP_HOST_USER }} "
 
       - name: Publish JAR Artifacts
         uses: gradle/gradle-build-action@v2
