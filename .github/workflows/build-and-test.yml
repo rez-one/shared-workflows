@@ -108,13 +108,21 @@ jobs:
 
       - run: echo "JAR publishing configured for branches - ${{ inputs.branchesToPublishArtifacts }}"
 
-      - run: echo "JAR publishing by user - ${{ secrets.NEXUS_USERNAME }}  and  ${{ secrets.SSH_JUMP_HOST_USER }} "
+      - name: "print users"
+        run: echo "JAR publishing by user - ${{ secrets.NEXUS_USERNAME }}  and  ${{ secrets.SSH_JUMP_HOST_USER }} "
+        env:
+          ORG_GRADLE_PROJECT_nexusUsername: ${{ secrets.NEXUS_USERNAME }}
+          ORG_GRADLE_PROJECT_nexusPassword: ${{ secrets.NEXUS_PASSWORD }}
+          ORG_GRADLE_PROJECT_nexusUn: dummy
+          nexusUn: dummy
+          nexusUsername: ${{ secrets.NEXUS_USERNAME }}
+          nexusPassword: ${{ secrets.NEXUS_PASSWORD }}
 
       - name: Publish JAR Artifacts
         uses: gradle/gradle-build-action@v2
         if: contains(fromJSON(inputs.branchesToPublishArtifacts), steps.extract_git_branch_info.outputs.branch_name)
         with:
-          arguments: publish -PnexusUN=dummy -PnexusUsername=${{ secrets.NEXUS_USERNAME }} -PnexusPassword=${{ secrets.NEXUS_PASSWORD }}
+          arguments: publish -PnexusUN="dummy" -PnexusUsername=${{ secrets.NEXUS_USERNAME }} -PnexusPassword=${{ secrets.NEXUS_PASSWORD }}
         env:
           ORG_GRADLE_PROJECT_nexusUsername: ${{ secrets.NEXUS_USERNAME }}
           ORG_GRADLE_PROJECT_nexusPassword: ${{ secrets.NEXUS_PASSWORD }}
