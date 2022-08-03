@@ -25,6 +25,13 @@ jobs:
   build-and-test:
     name: Build and Test Quality Gate Job
     runs-on: ubuntu-latest
+    env:
+      ORG_GRADLE_PROJECT_nexusUsername: ${{ secrets.NEXUS_USERNAME }}
+      ORG_GRADLE_PROJECT_nexusPassword: ${{ secrets.NEXUS_PASSWORD }}
+      ORG_GRADLE_PROJECT_nexusUn: dummy
+      nexusUn: dummy
+      nexusUsername: ${{ secrets.NEXUS_USERNAME }}
+      nexusPassword: ${{ secrets.NEXUS_PASSWORD }}
     steps:
       - name: Extract branch name and commit hash
         shell: bash
