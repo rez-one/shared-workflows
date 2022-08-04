@@ -28,6 +28,7 @@ jobs:
     env:
       ORG_GRADLE_PROJECT_nexusUsername: ${{ secrets.NEXUS_USERNAME }}
       ORG_GRADLE_PROJECT_nexusPassword: ${{ secrets.NEXUS_PASSWORD }}
+      ORG_GRADLE_PROJECT_dummy: adm
     steps:
       - name: Extract branch name and commit hash
         shell: bash
@@ -115,7 +116,7 @@ jobs:
         uses: gradle/gradle-build-action@v2
         if: contains(fromJSON(inputs.branchesToPublishArtifacts), steps.extract_git_branch_info.outputs.branch_name)
         with:
-          arguments: publish #-PnexusUsername=${{ secrets.NEXUS_USERNAME }} -PnexusPassword=${{ secrets.NEXUS_PASSWORD }}
+          arguments: publish -PnexusUsername=${{ env.NEXUS_USERNAME }} -PnexusPassword=${{ secrets.NEXUS_PASSWORD }}
 
       - name: Configure Docker Image
         id: 'docker-image-config'
