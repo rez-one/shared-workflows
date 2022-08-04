@@ -30,7 +30,7 @@ jobs:
       ORG_GRADLE_PROJECT_nexusPassword: ${{ secrets.NEXUS_PASSWORD }}
       nexusUsername: ${{ secrets.NEXUS_USERNAME }}
       nexusPassword: ${{ secrets.NEXUS_PASSWORD }}
-      nuDummy: adm
+      ORG_GRADLE_PROJECT_nuDummy: adm
     steps:
       - name: Extract branch name and commit hash
         shell: bash
