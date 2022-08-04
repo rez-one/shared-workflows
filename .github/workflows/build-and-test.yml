@@ -93,6 +93,9 @@ jobs:
       #        run: |
       #          netstat -a -n | grep 8089
 
+      - name: print nu
+        run: echo "$ORG_GRADLE_PROJECT_nexusUsername"
+
       - name: Build with Gradle
         uses: gradle/gradle-build-action@v2
         with:
