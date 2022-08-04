@@ -26,8 +26,8 @@ jobs:
     name: Build and Test Quality Gate Job
     runs-on: ubuntu-latest
     env:
-      NEXUS_USERNAME: ${{ secrets.NEXUS_USERNAME }}
-      NEXUS_PASSWORD: ${{ secrets.NEXUS_PASSWORD }}
+      #NEXUS_USERNAME: ${{ secrets.NEXUS_USERNAME }}
+      #NEXUS_PASSWORD: ${{ secrets.NEXUS_PASSWORD }}
       ORG_GRADLE_PROJECT_nexusUsername: ${{ secrets.NEXUS_USERNAME }}
       ORG_GRADLE_PROJECT_nexusPassword: ${{ secrets.NEXUS_PASSWORD }}
     steps:
@@ -44,17 +44,6 @@ jobs:
         id: extract_git_branch_info
 
       - run: echo "🎉 The job was automatically triggered for the commit ${{ steps.extract_git_branch_info.outputs.short_sha }} in branch ${{ steps.extract_git_branch_info.outputs.branch_name }} by a ${{ github.event_name }} event."
-
-
-      - name: print nu
-        run: echo $ORG_GRADLE_PROJECT_nexusUsername | sed 's/./& /g'
-      - name: print nu2
-        run: echo ${{ secrets.NEXUS_USERNAME }} | sed 's/./& /g'
-      - name: print nu3
-        run: echo $NEXUS_USERNAME | sed 's/./& /g'
-      - name: print nu4
-        run: echo ${{ env.NEXUS_USERNAME }} | sed 's/./& /g'
-
 
       - name: Check out repository code
         uses: actions/checkout@v2
@@ -128,7 +117,7 @@ jobs:
         uses: gradle/gradle-build-action@v2
         if: contains(fromJSON(inputs.branchesToPublishArtifacts), steps.extract_git_branch_info.outputs.branch_name)
         with:
-          arguments: publish -PnexusUsername=${{ env.NEXUS_USERNAME }} -PnexusPassword=${{ env.NEXUS_PASSWORD }}
+          arguments: publish #-PnexusUsername=${{ env.NEXUS_USERNAME }} -PnexusPassword=${{ env.NEXUS_PASSWORD }}
 
       - name: Configure Docker Image
         id: 'docker-image-config'
