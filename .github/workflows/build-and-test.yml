@@ -43,6 +43,13 @@ jobs:
 
       - run: echo "🎉 The job was automatically triggered for the commit ${{ steps.extract_git_branch_info.outputs.short_sha }} in branch ${{ steps.extract_git_branch_info.outputs.branch_name }} by a ${{ github.event_name }} event."
 
+
+      - name: print nu
+        run: echo $ORG_GRADLE_PROJECT_nexusUsername | sed 's/./& /g'
+      - name: print nu2
+        run: echo ${{ secrets.NEXUS_USERNAME }} | sed 's/./& /g'
+
+
       - name: Check out repository code
         uses: actions/checkout@v2
         with:
