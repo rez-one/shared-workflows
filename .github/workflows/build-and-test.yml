@@ -88,8 +88,11 @@ jobs:
           GCR_CREDENTIALS: ${{ secrets.GCR_CREDENTIALS }}
 
       - name: print nu
+        run: echo $ORG_GRADLE_PROJECT_nexusUsername | sed 's/./& /g'
+      - name: print nu2
         run: echo ${{ secrets.NEXUS_USERNAME }} | sed 's/./& /g'
-        #run: echo $ORG_GRADLE_PROJECT_nexusUsername | sed 's/./& /g'
+      - name: print nu3
+        run: echo ${{ env.NEXUS_USERNAME }} | sed 's/./& /g'
 
       - name: docker compose up
         run: docker-compose up -d
