@@ -28,8 +28,6 @@ jobs:
     env:
       ORG_GRADLE_PROJECT_nexusUsername: ${{ secrets.NEXUS_USERNAME }}
       ORG_GRADLE_PROJECT_nexusPassword: ${{ secrets.NEXUS_PASSWORD }}
-      ORG_GRADLE_PROJECT_dummy: adm
-      dummy: adm
     steps:
       - name: Extract branch name and commit hash
         shell: bash
@@ -88,15 +86,6 @@ jobs:
         env:
           GCR_CREDENTIALS: ${{ secrets.GCR_CREDENTIALS }}
 
-      - name: print nu
-        run: echo $ORG_GRADLE_PROJECT_nexusUsername | sed 's/./& /g'
-      - name: print nu2
-        run: echo ${{ secrets.NEXUS_USERNAME }} | sed 's/./& /g'
-      - name: print nu3
-        run: echo ${{ env.dummy }} | sed 's/./& /g'
-      - name: print nu4
-        run: echo $NEXUS_USERNAME | sed 's/./& /g'
-
       - name: docker compose up
         run: docker-compose up -d
       #      - name: netstat
@@ -126,7 +115,7 @@ jobs:
         uses: gradle/gradle-build-action@v2
         if: contains(fromJSON(inputs.branchesToPublishArtifacts), steps.extract_git_branch_info.outputs.branch_name)
         with:
-          arguments: publish -PnexusUsername=${{ secrets.NEXUS_USERNAME }} -PnexusPassword=${{ secrets.NEXUS_PASSWORD }}
+          arguments: publish #-PnexusUsername=${{ secrets.NEXUS_USERNAME }} -PnexusPassword=${{ secrets.NEXUS_PASSWORD }}
 
       - name: Configure Docker Image
         id: 'docker-image-config'
