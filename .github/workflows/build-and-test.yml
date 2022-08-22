@@ -85,7 +85,6 @@ jobs:
       - name: Configure GCR
         run: |
           mkdir -p $HOME/.gcr/
-          echo "$GCR_CREDENTIALS"
           echo "$GCR_CREDENTIALS" > $HOME/.gcr/gcr_sa_key.json
           chmod 600 $HOME/.gcr/gcr_sa_key.json
           cat $HOME/.gcr/gcr_sa_key.json
