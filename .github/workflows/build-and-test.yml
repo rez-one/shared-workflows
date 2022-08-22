@@ -20,6 +20,11 @@ on:
         required: false
         default: '["dev", "qa", "test", "uat", "main", "master"]'
         type: string
+      branchesToPublishImages:
+        description: 'Branches To Publish Docker Images to GCR'
+        required: false
+        default: '["dev", "qa", "test", "uat", "main", "master"]'
+        type: string
 
 jobs:
   build-and-test:
@@ -113,7 +118,7 @@ jobs:
 
       - name: Publish JAR Artifacts
         uses: gradle/gradle-build-action@v2
-        if: contains(fromJSON(inputs.branchesToPublishArtifacts), steps.extract_git_branch_info.outputs.branch_name)
+        if:  contains(fromJSON(inputs.branchesToPublishArtifacts), steps.extract_git_branch_info.outputs.branch_name) || startsWith(steps.extract_git_branch_info.outputs.branch_name, 'release')
         with:
           arguments: publish
 
@@ -123,9 +128,11 @@ jobs:
           echo '::set-output name=image_name::${{ steps.extract_git_branch_info.outputs.branch_name }}-${{ steps.extract_git_branch_info.outputs.short_sha }}'
 
       - run: echo "The docker image name is ${{ steps.docker-image-config.outputs.image_name }}"
+      - run: echo "Image publishing configured for branches - ${{ inputs.branchesToPublishImages }}"
 
       - name: Publish Image to GCR
         uses: gradle/gradle-build-action@v2
+        if:  contains(fromJSON(inputs.branchesToPublishImages), steps.extract_git_branch_info.outputs.branch_name)
         with:
           arguments: publishDockerImage -PimageName=${{ steps.docker-image-config.outputs.image_name }}
 
