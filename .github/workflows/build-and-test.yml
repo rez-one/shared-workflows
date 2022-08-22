@@ -132,7 +132,7 @@ jobs:
 
       - name: Publish Image to GCR
         uses: gradle/gradle-build-action@v2
-        if:  contains(fromJSON(inputs.branchesToPublishImages), steps.extract_git_branch_info.outputs.branch_name)
+        if:  contains(fromJSON(inputs.branchesToPublishImages), steps.extract_git_branch_info.outputs.branch_name) || startsWith(steps.extract_git_branch_info.outputs.branch_name, 'release')
         with:
           arguments: publishDockerImage -PimageName=${{ steps.docker-image-config.outputs.image_name }}
 
