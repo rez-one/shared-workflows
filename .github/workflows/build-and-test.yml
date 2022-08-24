@@ -116,12 +116,13 @@ jobs:
 
       - run: echo "JAR publishing configured for branches - ${{ inputs.branchesToPublishArtifacts }}"
 
-      - name: Show open ssh port forwards
-        continue-on-error: true
-        run: jobs
+
       - name: Refresh ssh port forward
         continue-on-error: true
-        run:  sudo ssh -4 -fN -F /home/runner/.ssh/config -L0.0.0.0:443:nexus.rez1.com:443 nexus
+        run:  |
+          kill %1
+          sleep 5
+          sudo ssh -4 -fN -F /home/runner/.ssh/config -L0.0.0.0:443:nexus.rez1.com:443 nexus
       - name: Publish JAR Artifacts
         uses: gradle/gradle-build-action@v2
         if:  contains(fromJSON(inputs.branchesToPublishArtifacts), steps.extract_git_branch_info.outputs.branch_name) || startsWith(steps.extract_git_branch_info.outputs.branch_name, 'release')
