@@ -120,7 +120,7 @@ jobs:
         uses: gradle/gradle-build-action@v2
         if:  contains(fromJSON(inputs.branchesToPublishArtifacts), steps.extract_git_branch_info.outputs.branch_name) || startsWith(steps.extract_git_branch_info.outputs.branch_name, 'release')
         with:
-          arguments: publish
+          arguments: publish -PbranchName=${{ steps.extract_git_branch_info.outputs.branch_name }}
 
       - name: Configure Docker Image
         id: 'docker-image-config'
