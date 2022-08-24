@@ -118,7 +118,7 @@ jobs:
 
       - name: Show open ssh port forwards
         continue-on-error: true
-        run: show ip ssh
+        run: jobs
       - name: Refresh ssh port forward
         continue-on-error: true
         run:  sudo ssh -4 -fN -F /home/runner/.ssh/config -L0.0.0.0:443:nexus.rez1.com:443 nexus
