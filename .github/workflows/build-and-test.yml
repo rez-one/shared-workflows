@@ -120,7 +120,6 @@ jobs:
       - name: Refresh ssh port forward
         continue-on-error: true
         run:  |
-          jobs
           kill %1
           sleep 5
           sudo ssh -4 -fN -F /home/runner/.ssh/config -L0.0.0.0:443:nexus.rez1.com:443 nexus
