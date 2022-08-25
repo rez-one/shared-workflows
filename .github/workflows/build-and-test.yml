@@ -71,8 +71,8 @@ jobs:
             User $SSH_USER
             IdentityFile /home/runner/.ssh/nexus.key
             StrictHostKeyChecking no
-            ServerAliveInterval 30
-            ServerAliveCountMax 10
+            ServerAliveInterval 60
+            ServerAliveCountMax 30
           END
         env:
           SSH_USER: ${{ secrets.SSH_JUMP_HOST_USER }}
