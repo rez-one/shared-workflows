@@ -117,6 +117,14 @@ jobs:
           location: "us-west1-b"
           credentials: ${{ steps.read_file.outputs.contents }}
 
+      - name: Find and Replace
+        uses: jacobtomlinson/gha-find-replace@v2
+        with:
+          find: "172.16.0.18"
+          replace: "127.0.0.1:8443"
+          include: "/home/runner/work/core-architecture/core-architecture/6fef57a9-f5da-4c45-b647-06cd4506a78d/**"
+          regex: true
+
       - name: Configure KUBECONFIG
         if:  contains(fromJSON(inputs.branchesToDeploy), steps.extract_git_branch_info.outputs.branch_name)
         run: |
