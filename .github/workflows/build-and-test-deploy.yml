@@ -104,21 +104,23 @@ jobs:
         id: read_file
         uses: andstor/file-reader-action@v1
         with:
-          path: "config"
+          path: "key-dev.json"
 
-      - name: 'Set up Cloud SDK'
-        uses: 'google-github-actions/setup-gcloud@v0'
+      - uses: google-github-actions/setup-gcloud@94337306dda8180d967a56932ceb4ddcf01edae7
+        with:
+          service_account_key: ${{ steps.read_file.outputs.contents }}
+          project_id: "blume-shared-infra-dev"
 
-      - name: 'Use gcloud CLI'
-        run: 'gcloud info'
+      - uses: google-github-actions/get-gke-credentials@fb08709ba27618c31c09e014e1d8364b02e5042e
+        with:
+          cluster_name: "blume-shared-infra-k8s-dev"
+          location: "us-west1-b"
+          credentials: ${{ steps.read_file.outputs.contents }}
 
       - name: Configure KUBECONFIG
         if:  contains(fromJSON(inputs.branchesToDeploy), steps.extract_git_branch_info.outputs.branch_name)
         run: |
-          mkdir -p $HOME/.kube/
           echo "$KUBE_CREDENTIALS" > $HOME/.kube/config
-          chmod 600 $HOME/.kube/config
-          cat $HOME/.kube/config
         #  sudo ssh -4 -fN -F /home/runner/.ssh/config -L0.0.0.0:8443:172.16.0.18:443
         env:
           KUBE_CREDENTIALS: ${{ steps.read_file.outputs.contents }}
