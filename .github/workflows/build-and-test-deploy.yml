@@ -116,8 +116,6 @@ jobs:
           cluster_name: "blume-shared-infra-k8s-dev"
           location: "us-west1-b"
           credentials: ${{ steps.read_file.outputs.contents }}
-
-
       - uses: bluwy/substitute-string-action@v1
         id: sub
         with:
