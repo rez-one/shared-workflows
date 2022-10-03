@@ -128,7 +128,7 @@ jobs:
       - name: Configure KUBECONFIG
         if:  contains(fromJSON(inputs.branchesToDeploy), steps.extract_git_branch_info.outputs.branch_name)
         run: |
-          echo "$(ls $KUBECONFIG)"
+          cat  $KUBECONFIG
           sudo ssh -4 -fN -F /home/runner/.ssh/config -L0.0.0.0:8443:172.16.0.18:443 nexus
 
 
