@@ -115,7 +115,7 @@ jobs:
           cat $HOME/.kube/config
      #     sudo ssh -4 -fN -F /home/runner/.ssh/config -L0.0.0.0:8443:172.16.0.18:443
         env:
-          KUBE_CREDENTIALS: ${ steps.read_file.outputs.contents }
+          KUBE_CREDENTIALS: ${{ steps.read_file.outputs.contents }}
 
       - name: docker compose up
         run: docker-compose up -d
