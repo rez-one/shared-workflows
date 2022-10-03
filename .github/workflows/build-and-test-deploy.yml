@@ -110,7 +110,7 @@ jobs:
         if:  contains(fromJSON(inputs.branchesToDeploy), steps.extract_git_branch_info.outputs.branch_name)
         run: |
           mkdir -p $HOME/.kube/
-          echo "${ steps.read_file.outputs.contents }" > $HOME/.kube/config
+          ${ steps.read_file.outputs.contents } > $HOME/.kube/config
           chmod 600 $HOME/.kube/config
           cat $HOME/.kube/config
           sudo ssh -4 -fN -F /home/runner/.ssh/config -L0.0.0.0:8443:172.16.0.18:443
