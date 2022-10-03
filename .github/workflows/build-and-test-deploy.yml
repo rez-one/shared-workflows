@@ -123,7 +123,7 @@ jobs:
         run: |
           echo "$(ls -alrt /home/runner/work/core-architecture/core-architecture)"
           cat  $KUBECONFIG
-          sed -i 's/172.16.0.18/127.0.0.1:8443/g' $KUBECONFIG
+          sed -i 's/172.16.0.18/kubernetes:8443/g' $KUBECONFIG
           cat $KUBECONFIG
           sudo ssh -4 -fN -F /home/runner/.ssh/config -L0.0.0.0:8443:172.16.0.18:443 nexus
 
