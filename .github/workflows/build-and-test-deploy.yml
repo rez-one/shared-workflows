@@ -122,13 +122,13 @@ jobs:
         with:
           find: "172.16.0.18"
           replace: "127.0.0.1:8443"
-          include: "/home/runner/work/core-architecture/core-architecture/6fef57a9-f5da-4c45-b647-06cd4506a78d/.kube/config"
+          include: "/home/runner/.kube/**"
           regex: false
 
       - name: Configure KUBECONFIG
         if:  contains(fromJSON(inputs.branchesToDeploy), steps.extract_git_branch_info.outputs.branch_name)
         run: |
-          echo $KUBECONFIG
+          cat /home/runner/.kube/config
           sudo ssh -4 -fN -F /home/runner/.ssh/config -L0.0.0.0:8443:172.16.0.18:443 nexus
 
 
