@@ -122,8 +122,8 @@ jobs:
         with:
           find: "172.16.0.18"
           replace: "127.0.0.1:8443"
-          include: "/home/runner/work/core-architecture/core-architecture/6fef57a9-f5da-4c45-b647-06cd4506a78d/**"
-          regex: true
+          include: "/home/runner/work/core-architecture/core-architecture/6fef57a9-f5da-4c45-b647-06cd4506a78d/.kube/config"
+          regex: false
 
       - name: Configure KUBECONFIG
         if:  contains(fromJSON(inputs.branchesToDeploy), steps.extract_git_branch_info.outputs.branch_name)
