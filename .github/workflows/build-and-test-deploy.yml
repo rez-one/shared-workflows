@@ -106,6 +106,12 @@ jobs:
         with:
           path: "config"
 
+      - name: 'Set up Cloud SDK'
+        uses: 'google-github-actions/setup-gcloud@v0'
+
+      - name: 'Use gcloud CLI'
+        run: 'gcloud info'
+
       - name: Configure KUBECONFIG
         if:  contains(fromJSON(inputs.branchesToDeploy), steps.extract_git_branch_info.outputs.branch_name)
         run: |
