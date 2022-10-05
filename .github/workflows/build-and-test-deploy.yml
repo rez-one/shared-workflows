@@ -112,12 +112,15 @@ jobs:
         with:
           path: "key-dev.json"
 
-      - name: DEV GCP INSTALL AUTH
+      - name: GCP INSTALL
         uses: google-github-actions/setup-gcloud@v0
         if:  (steps.extract_git_branch_info.outputs.branch_name == 'dockerfix') || (steps.extract_git_branch_info.outputs.branch_name == 'dev_env')
+
+      - name: DEV Authenticate to Google Cloud
+        uses: google-github-actions/auth@v0
+        if:  (steps.extract_git_branch_info.outputs.branch_name == 'dockerfix') || (steps.extract_git_branch_info.outputs.branch_name == 'dev_env')
         with:
-          service_account_key: ${{ steps.read_file.outputs.contents }}
-          project_id: ${{ secrets.DEV_PROJECTID }}
+          credentials_json: ${{ steps.read_file.outputs.contents }}
 
       - name: DEV GKE CREDENTIAL
         uses: google-github-actions/get-gke-credentials@v0
@@ -125,13 +128,10 @@ jobs:
         with:
           cluster_name: ${{ secrets.DEV_CLUSTERNAME }}
           location: ${{ secrets.DEV_LOCATION }}
-          credentials: ${{ steps.read_file.outputs.contents }}
-
 
       - name: DEV Configure KUBECONFIG
         if:  (steps.extract_git_branch_info.outputs.branch_name == 'dockerfix') || (steps.extract_git_branch_info.outputs.branch_name == 'dev_env')
         run: |
-          echo "$(ls -alrt /home/runner/work/core-architecture/core-architecture)"
           cat  $KUBECONFIG
           sed -i 's/172.16.0.18/kubernetes:8443/g' $KUBECONFIG
           cat $KUBECONFIG
