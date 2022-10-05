@@ -171,9 +171,11 @@ jobs:
         uses: gradle/gradle-build-action@v2
         if:  contains(fromJSON(inputs.branchesToPublishImages), steps.extract_git_branch_info.outputs.branch_name) || startsWith(steps.extract_git_branch_info.outputs.branch_name, 'release')
         with:
-          arguments: publishDockerImage -PimageName=${{ steps.docker-image-config.outputs.image_name }}
+          arguments: helmInstall  -P helm.release.target=dev -PimageRepository='us.gcr.io/blume-shared-container-images/demo-pr
+  oject/demo-project-app' -PimageTag= ${{ steps.docker-image-config.outputs.image_name }}
 
-      #      - name: Test Report
+
+#      - name: Test Report
       #        uses: dorny/test-reporter@v1
       #        if: success() || failure()    # run this step even if previous step failed
       #        with:
@@ -187,9 +189,10 @@ jobs:
       - run: echo "🍏 This job's status is ${{ job.status }}."
 
       - name: Deploy
+        uses: gradle/gradle-build-action@v2
         if: contains(fromJSON(inputs.branchesToDeploy), steps.extract_git_branch_info.outputs.branch_name)
-        run: |
-          kubectl get all
+        with:
+          arguments: publishDockerImage -PimageName=${{ steps.docker-image-config.outputs.image_name }}
 
       #- name: Count Commits
       #  run: |
