@@ -171,8 +171,7 @@ jobs:
         uses: gradle/gradle-build-action@v2
         if:  contains(fromJSON(inputs.branchesToPublishImages), steps.extract_git_branch_info.outputs.branch_name) || startsWith(steps.extract_git_branch_info.outputs.branch_name, 'release')
         with:
-          arguments: helmInstall  -P helm.release.target=dev -PimageRepository='us.gcr.io/blume-shared-container-images/demo-pr
-  oject/demo-project-app' -PimageTag= ${{ steps.docker-image-config.outputs.image_name }}
+          arguments: helmInstall  -P helm.release.target=dev -PimageRepository='us.gcr.io/blume-shared-container-images/demo-project/demo-project-app' -PimageTag= ${{ steps.docker-image-config.outputs.image_name }}
 
 
 #      - name: Test Report
