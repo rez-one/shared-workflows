@@ -14,12 +14,6 @@ on:
         required: false
       NEXUS_PASSWORD:
         required: false
-      DEV_PROJECTID:
-        required: false
-      DEV_CLUSTERNAME:
-        required: false
-      DEV_LOCATION:
-        required: false
       DEPLOY_DEV_CREDENTIALS:
         required: false
     inputs:
@@ -120,14 +114,14 @@ jobs:
         uses: google-github-actions/auth@v0
         if:  (steps.extract_git_branch_info.outputs.branch_name == 'dockerfix') || (steps.extract_git_branch_info.outputs.branch_name == 'dev_env')
         with:
-          credentials_json: ${{ steps.read_file.outputs.contents }}
+          credentials_json: ${{ secrets.DEPLOY_DEV_CREDENTIALS }}
 
       - name: DEV GKE CREDENTIAL
         uses: google-github-actions/get-gke-credentials@v0
         if:  (steps.extract_git_branch_info.outputs.branch_name == 'dockerfix') || (steps.extract_git_branch_info.outputs.branch_name == 'dev_env')
         with:
-          cluster_name: ${{ secrets.DEV_CLUSTERNAME }}
-          location: ${{ secrets.DEV_LOCATION }}
+          cluster_name: 'blume-shared-infra-k8s-dev'
+          location: 'us-west1-b'
 
       - name: DEV Configure KUBECONFIG
         if:  (steps.extract_git_branch_info.outputs.branch_name == 'dockerfix') || (steps.extract_git_branch_info.outputs.branch_name == 'dev_env')
