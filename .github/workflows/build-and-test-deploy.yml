@@ -100,11 +100,6 @@ jobs:
         env:
           GCR_CREDENTIALS: ${{ secrets.GCR_CREDENTIALS }}
 
-      - name: Read file contents
-        id: read_file
-        uses: andstor/file-reader-action@v1
-        with:
-          path: "key-dev.json"
 
       - name: GCP INSTALL
         uses: google-github-actions/setup-gcloud@v0
