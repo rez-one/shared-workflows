@@ -190,7 +190,7 @@ jobs:
         uses: gradle/gradle-build-action@v2
         if: contains(fromJSON(inputs.branchesToDeploy), steps.extract_git_branch_info.outputs.branch_name)
         with:
-          arguments: helmInstall  -P helm.release.target=dev -PimageRepository='us.gcr.io/blume-shared-container-images/demo-project/demo-project-app' -PimageTag= ${{ steps.docker-image-config.outputs.image_name }}
+          arguments: helmInstall  -P helm.release.target=dev -PimageRepository='us.gcr.io/blume-shared-container-images/demo-project/demo-project-app' -PimageTag= "${{ steps.docker-image-config.outputs.image_name }}"
 
       #- name: Count Commits
       #  run: |
