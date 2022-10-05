@@ -10,11 +10,17 @@ on:
         required: true
       GCR_CREDENTIALS:
         required: true
-      KUBE_CREDENTIALS:
-        required: false
       NEXUS_USERNAME:
         required: false
       NEXUS_PASSWORD:
+        required: false
+      DEV_PROJECTID:
+        required: false
+      DEV_CLUSTERNAME:
+        required: false
+      DEV_LOCATION:
+        required: false
+      DEPLOY_DEV_CREDENTIALS:
         required: false
     inputs:
       branchesToPublishArtifacts:
@@ -30,7 +36,7 @@ on:
       branchesToDeploy:
         description: 'Branches To Deploy'
         required: false
-        default: '["dockerfix"]'
+        default: '["dockerfix","dev_env"]'
         type: string
 
 jobs:
@@ -106,20 +112,24 @@ jobs:
         with:
           path: "key-dev.json"
 
-      - uses: google-github-actions/setup-gcloud@94337306dda8180d967a56932ceb4ddcf01edae7
+      - name: DEV GCP INSTALL AUTH
+        uses: google-github-actions/setup-gcloud@v0
+        if:  (steps.extract_git_branch_info.outputs.branch_name == 'dockerfix') || (steps.extract_git_branch_info.outputs.branch_name == 'dev_env')
         with:
           service_account_key: ${{ steps.read_file.outputs.contents }}
-          project_id: "blume-shared-infra-dev"
+          project_id: ${{ secrets.DEV_PROJECTID }}
 
-      - uses: google-github-actions/get-gke-credentials@fb08709ba27618c31c09e014e1d8364b02e5042e
+      - name: DEV GKE CREDENTIAL
+        uses: google-github-actions/get-gke-credentials@v0
+        if:  (steps.extract_git_branch_info.outputs.branch_name == 'dockerfix') || (steps.extract_git_branch_info.outputs.branch_name == 'dev_env')
         with:
-          cluster_name: "blume-shared-infra-k8s-dev"
-          location: "us-west1-b"
+          cluster_name: ${{ secrets.DEV_CLUSTERNAME }}
+          location: ${{ secrets.DEV_LOCATION }}
           credentials: ${{ steps.read_file.outputs.contents }}
 
 
-      - name: Configure KUBECONFIG
-        if:  contains(fromJSON(inputs.branchesToDeploy), steps.extract_git_branch_info.outputs.branch_name)
+      - name: DEV Configure KUBECONFIG
+        if:  (steps.extract_git_branch_info.outputs.branch_name == 'dockerfix') || (steps.extract_git_branch_info.outputs.branch_name == 'dev_env')
         run: |
           echo "$(ls -alrt /home/runner/work/core-architecture/core-architecture)"
           cat  $KUBECONFIG
@@ -186,11 +196,11 @@ jobs:
           ls ${{ github.workspace }}
       - run: echo "🍏 This job's status is ${{ job.status }}."
 
-      - name: Deploy
+      - name: Dev Deploy
         uses: gradle/gradle-build-action@v2
-        if: contains(fromJSON(inputs.branchesToDeploy), steps.extract_git_branch_info.outputs.branch_name)
+        if: (steps.extract_git_branch_info.outputs.branch_name == 'dockerfix') || (steps.extract_git_branch_info.outputs.branch_name == 'dev_env')
         with:
-          arguments: helmInstall  -P helm.release.target=dev -PimageRepository='us.gcr.io/blume-shared-container-images/demo-project/demo-project-app' -PimageTag="${{ steps.docker-image-config.outputs.image_name }}"
+          arguments: helmInstall  -P helm.release.target=dev  -PimageTag="${{ steps.docker-image-config.outputs.image_name }}"
 
       #- name: Count Commits
       #  run: |
