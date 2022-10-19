@@ -49,3 +49,9 @@ jobs:
       - run: echo "🎉 The job was automatically triggered for the commit ${{ steps.extract_git_branch_info.outputs.short_sha }} in branch ${{ steps.extract_git_branch_info.outputs.branch_name }} by a ${{ github.event_name }} event."
       - run: echo "🎉 github.ref ${{ github.ref}}  github.ref_name ${{ github.ref_name}}"
 
+      - name: Dump GitHub context
+        id: github_context_step
+        run: echo $JSON
+        env:
+          JSON: ${{ toJSON(github) }}
+
