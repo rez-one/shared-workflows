@@ -25,6 +25,11 @@ on:
         required: false
         default: '["dev", "qa", "test", "uat", "main", "master"]'
         type: string
+      skipTest: 
+        description: 'option to skip tests'
+        required: false
+        default: ''
+        type: string
 
 jobs:
   build-and-test:
@@ -102,7 +107,7 @@ jobs:
       - name: Build with Gradle
         uses: gradle/gradle-build-action@v2
         with:
-          arguments: clean build --refresh-dependencies
+          arguments: clean build --refresh-dependencies ${{ inputs.skipTest }}
 
       #      - name: Publish Unit Test Results
       #        uses: EnricoMi/publish-unit-test-result-action@v1
