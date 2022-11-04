@@ -108,7 +108,7 @@ jobs:
       - name: Build with Gradle
         uses: gradle/gradle-build-action@v2
         with:
-          arguments: clean build --refresh-dependencies ${{ inputs.skipTest }}
+          arguments: clean build --refresh-dependencies
 
       - name: Publish Test Report
         uses: mikepenz/action-junit-report@v3
