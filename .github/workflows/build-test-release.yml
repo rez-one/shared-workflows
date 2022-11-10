@@ -30,6 +30,11 @@ on:
         required: false
         default: ''
         type: string
+      branchesToDeploy:
+        description: 'Branches To Deploy'
+        required: false
+        default: '["dev-env"]'
+        type: string
 jobs:
   build-and-test:
     name: Build and Test Quality Gate Job
@@ -91,7 +96,7 @@ jobs:
 
       - name: Execute ssh port forward
         run: |
-          sudo echo "127.0.0.1 nexus.rez1.com nexus" | sudo tee -a /etc/hosts
+          sudo echo "127.0.0.1 nexus.rez1.com nexus kubernetes" | sudo tee -a /etc/hosts
           sudo ssh -4 -fN -F /home/runner/.ssh/config -L0.0.0.0:443:nexus.rez1.com:443 nexus
       - name: Configure GCR
         run: |
@@ -101,6 +106,29 @@ jobs:
           cat $HOME/.gcr/gcr_sa_key.json
         env:
           GCR_CREDENTIALS: ${{ secrets.GCR_CREDENTIALS }}
+
+      - name: GCP INSTALL
+        uses: google-github-actions/setup-gcloud@v0
+        if: (steps.extract_git_branch_info.outputs.branch_name == 'dev-env')
+
+      - name: DEV Authenticate to Google Cloud
+        uses: google-github-actions/auth@v0
+        if: (steps.extract_git_branch_info.outputs.branch_name == 'dev-env')
+        with:
+          credentials_json: ${{ secrets.DEPLOY_DEV_CREDENTIALS }}
+
+      - name: DEV GKE CREDENTIAL
+        uses: google-github-actions/get-gke-credentials@v0
+        if: (steps.extract_git_branch_info.outputs.branch_name == 'dev-env')
+        with:
+          cluster_name: 'blume-shared-infra-k8s-dev'
+          location: 'us-west1-b'
+
+      - name: DEV Configure KUBECONFIG
+        if: (steps.extract_git_branch_info.outputs.branch_name == 'dev-env')
+        run: |
+          sed -i 's/172.16.0.18/kubernetes:8443/g' $KUBECONFIG
+          sudo ssh -4 -fN -F /home/runner/.ssh/config -L0.0.0.0:8443:172.16.0.18:443 nexus
 
       - name: docker compose up
         run: docker-compose up -d
@@ -141,6 +169,13 @@ jobs:
         run: |
           ls ${{ github.workspace }}
       - run: echo "🍏 This job's status is ${{ job.status }}."
+
+      - name: Dev Deploy
+        uses: gradle/gradle-build-action@v2
+        if: (steps.extract_git_branch_info.outputs.branch_name == 'dev-env')
+        with:
+          arguments: helmInstall  -P helm.release.target=dev  -PimageTag="${{ steps.docker-image-config.outputs.image_name }}"
+
 
       
 
