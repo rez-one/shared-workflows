@@ -30,7 +30,11 @@ on:
         required: false
         default: ''
         type: string
-
+      branchesToDeploy:
+        description: 'Branches To Deploy'
+        required: false
+        default: '["dev-env"]'
+        type: string
 jobs:
   build-and-test:
     name: Build and Test Quality Gate Job
@@ -38,9 +42,6 @@ jobs:
     env:
       ORG_GRADLE_PROJECT_nexusUsername: ${{ secrets.NEXUS_USERNAME }}
       ORG_GRADLE_PROJECT_nexusPassword: ${{ secrets.NEXUS_PASSWORD }}
-      SSH_USER: ${{ secrets.SSH_JUMP_HOST_USER }}
-      SSH_KEY: ${{ secrets.SSH_JUMP_HOST_KEY }}
-      SSH_HOST: ${{ secrets.SSH_JUMP_HOST_IP }}
     steps:
       - name: Extract branch name and commit hash
         shell: bash
@@ -55,7 +56,13 @@ jobs:
         id: extract_git_branch_info
 
       - run: echo "🎉 The job was automatically triggered for the commit ${{ steps.extract_git_branch_info.outputs.short_sha }} in branch ${{ steps.extract_git_branch_info.outputs.branch_name }} by a ${{ github.event_name }} event."
-
+      
+      - name: Dump GitHub context
+        id: github_context_step
+        run: echo $JSON
+        env:
+          JSON: ${{ toJSON(github) }}
+          
       - name: Check out repository code
         uses: actions/checkout@v2
         with:
@@ -82,13 +89,15 @@ jobs:
             ServerAliveInterval 60
             ServerAliveCountMax 30
           END
-   
+        env:
+          SSH_USER: ${{ secrets.SSH_JUMP_HOST_USER }}
+          SSH_KEY: ${{ secrets.SSH_JUMP_HOST_KEY }}
+          SSH_HOST: ${{ secrets.SSH_JUMP_HOST_IP }}
 
       - name: Execute ssh port forward
         run: |
-          sudo echo "127.0.0.1 nexus.rez1.com nexus" | sudo tee -a /etc/hosts
+          sudo echo "127.0.0.1 nexus.rez1.com nexus kubernetes" | sudo tee -a /etc/hosts
           sudo ssh -4 -fN -F /home/runner/.ssh/config -L0.0.0.0:443:nexus.rez1.com:443 nexus
-
       - name: Configure GCR
         run: |
           mkdir -p $HOME/.gcr/
@@ -98,42 +107,56 @@ jobs:
         env:
           GCR_CREDENTIALS: ${{ secrets.GCR_CREDENTIALS }}
 
+      - name: GCP INSTALL
+        uses: google-github-actions/setup-gcloud@v0
+        if: (steps.extract_git_branch_info.outputs.branch_name == 'dev-env')
+
+      - name: DEV Authenticate to Google Cloud
+        uses: google-github-actions/auth@v0
+        if: (steps.extract_git_branch_info.outputs.branch_name == 'dev-env')
+        with:
+          credentials_json: ${{ secrets.DEPLOY_DEV_CREDENTIALS }}
+
+      - name: DEV GKE CREDENTIAL
+        uses: google-github-actions/get-gke-credentials@v0
+        if: (steps.extract_git_branch_info.outputs.branch_name == 'dev-env')
+        with:
+          cluster_name: 'blume-shared-infra-k8s-dev'
+          location: 'us-west1-b'
+
+      - name: DEV Configure KUBECONFIG
+        if: (steps.extract_git_branch_info.outputs.branch_name == 'dev-env')
+        run: |
+          sed -i 's/172.16.0.18/kubernetes:8443/g' $KUBECONFIG
+          sudo ssh -4 -fN -F /home/runner/.ssh/config -L0.0.0.0:8443:172.16.0.18:443 nexus
+
       - name: docker compose up
         run: docker-compose up -d
-      #      - name: netstat
-      #        run: |
-      #          netstat -a -n | grep 8089
 
       - name: Build with Gradle
         uses: gradle/gradle-build-action@v2
         with:
-          arguments: clean build --refresh-dependencies ${{ inputs.skipTest }}
+          arguments: clean build --refresh-dependencies
 
-      #      - name: Publish Unit Test Results
-      #        uses: EnricoMi/publish-unit-test-result-action@v1
-      #        if: always()
-      #        with:
-      #          files: "**/build/test-results/test/*.xml"
-
-      - name: Publish Test Report
-        uses: mikepenz/action-junit-report@v3
-        if: always() # always run even if the previous step fails
+      - name: Publish Unit Test Results
+        uses: EnricoMi/publish-unit-test-result-action@v1
+        if: always()
         with:
-          report_paths: '**/build/test-results/test/TEST-*.xml'
+          files: "**/build/test-results/test/*.xml"
+
 
       - run: echo "JAR publishing configured for branches - ${{ inputs.branchesToPublishArtifacts }}"
 
       - name: Publish JAR Artifacts
         uses: gradle/gradle-build-action@v2
-        if:  contains(fromJSON(inputs.branchesToPublishArtifacts), steps.extract_git_branch_info.outputs.branch_name) || startsWith(steps.extract_git_branch_info.outputs.branch_name, 'release')
+        if:  contains(fromJSON(inputs.branchesToPublishArtifacts), steps.extract_git_branch_info.outputs.branch_name) || startsWith(github.ref, 'refs/tags/v')
         with:
-          arguments: publish -PbranchName=${{ steps.extract_git_branch_info.outputs.branch_name }}
+          arguments: publish  -Pgithubref=${{github.ref}} -PbranchName=${{ steps.extract_git_branch_info.outputs.branch_name }}
 
       - name: Configure Docker Image
         id: 'docker-image-config'
         run: |
           echo '::set-output name=image_name::${{ steps.extract_git_branch_info.outputs.branch_name }}-${{ steps.extract_git_branch_info.outputs.short_sha }}'
-
       - run: echo "The docker image name is ${{ steps.docker-image-config.outputs.image_name }}"
       - run: echo "Image publishing configured for branches - ${{ inputs.branchesToPublishImages }}"
 
@@ -143,29 +166,19 @@ jobs:
         with:
           arguments: publishDockerImage -PimageName=${{ steps.docker-image-config.outputs.image_name }}
 
-      #      - name: Test Report
-      #        uses: dorny/test-reporter@v1
-      #        if: success() || failure()    # run this step even if previous step failed
-      #        with:
-      #          name: JUnit Tests            # Name of the check run which will be created
-      #          path: "**/build/test-results/test/*.xml"    # Path to test results
-      #          reporter: jest-junit        # Format of test results
-
       - name: List files in the repository
         run: |
           ls ${{ github.workspace }}
       - run: echo "🍏 This job's status is ${{ job.status }}."
 
-      #- name: Count Commits
-      #  run: |
-      #    git rev-list HEAD ^origin/${{github.base_ref }}
-      #    echo "REV_LIST_COUNT=$(git rev-list --count HEAD ^origin/${{github.base_ref }})" >> $GITHUB_ENV
+      - name: Dev Deploy
+        uses: gradle/gradle-build-action@v2
+        if: (steps.extract_git_branch_info.outputs.branch_name == 'dev-env')
+        with:
+          arguments: helmInstall  -P helm.release.target=dev  -PimageTag="${{ steps.docker-image-config.outputs.image_name }}"
 
-      #- name: Fail if more than one commit
-      #  if: env.REV_LIST_COUNT > 2
-      #  run: |
-      #    echo "This PR has more than one commit"
-      #    echo "Squash your commits before pushing"
-      #    echo "  git rebase -i origin/${{github.base_ref }} "
-      #    echo "  git push --force "
-      #    exit -1
+
+      
+
+
+
