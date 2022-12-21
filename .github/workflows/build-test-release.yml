@@ -138,7 +138,7 @@ jobs:
         with:
           arguments: clean build --refresh-dependencies
 
-      - name: Publish Unit Test Results
+      - name: Publish Test Reports
         uses: EnricoMi/publish-unit-test-result-action@v1
         if: always()
         with:
