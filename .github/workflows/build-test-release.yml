@@ -20,6 +20,11 @@ on:
         required: false
         default: '["dev", "qa", "test", "uat", "main", "master"]'
         type: string
+      branchesToPublishImages:
+        description: 'Branches To Publish Docker Images to GCR'
+        required: false
+        default: '["dev", "qa", "test", "uat", "main", "master"]'
+        type: string
       branchesToDeploy:
         description: 'Branches To Deploy'
         required: false
