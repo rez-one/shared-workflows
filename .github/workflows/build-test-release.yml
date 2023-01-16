@@ -133,16 +133,16 @@ jobs:
       - name: docker compose up
         run: docker-compose up -d
 
-      - name: Build with Gradle
-        uses: gradle/gradle-build-action@v2
-        with:
-          arguments: clean build --refresh-dependencies
+#       - name: Build with Gradle
+#         uses: gradle/gradle-build-action@v2
+#         with:
+#           arguments: clean build --refresh-dependencies
 
-      - name: Publish Test Reports
-        uses: EnricoMi/publish-unit-test-result-action@v1
-        if: always()
-        with:
-          files: "**/build/test-results/test/*.xml"
+#       - name: Publish Test Reports
+#         uses: EnricoMi/publish-unit-test-result-action@v1
+#         if: always()
+#         with:
+#           files: "**/build/test-results/test/*.xml"
 
       - run: echo "JAR publishing configured for branches - ${{ inputs.branchesToPublishArtifacts }}"
 
