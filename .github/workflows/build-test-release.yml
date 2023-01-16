@@ -146,19 +146,26 @@ jobs:
 
       - run: echo "JAR publishing configured for branches - ${{ inputs.branchesToPublishArtifacts }}"
 
-      - name: Check publish tasks
+      - name: Shuold publish
+        continue-on-error: true
         run: ./gradlew tasks --all | grep -qw "publish"
+        id: publish_jar
 
-      - name: Should Publish
-        run: |
-          echo "val=$(./gradlew tasks --all | grep -qw publish)" >> $GITHUB_OUTPUT
-        id: check_publish
+#       - name: Check Publish
+#         run: |
+#           echo "val=$(./gradlew tasks --all | grep -qw publish)" >> $GITHUB_OUTPUT
+#         id: check_publish
         
       - name: Shoud Publish output   
-        run: echo $steps.check_publish.outputs.val
+        run: echo $steps.publish_jar.outcome
 
       - name: Check pubishDockerImage
+        continue-on-error: true
         run: ./gradlew tasks --all | grep -qw "publishDockerImage"
+        id: publish_gcr
+
+      - name: Shoud Publish GCR output   
+        run: echo $steps.publish_gcr.outcome
 
       - name: Publish JAR Artifacts
         uses: gradle/gradle-build-action@v2
