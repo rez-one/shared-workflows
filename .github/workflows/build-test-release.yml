@@ -147,7 +147,7 @@ jobs:
       - run: echo "JAR publishing configured for branches - ${{ inputs.branchesToPublishArtifacts }}"
 
       - name: Check tasks
-        run: ./gradlew tasks --all | grep "publish"
+        run: ./gradlew tasks --all | grep -w "publish"
 
       - name: Publish JAR Artifacts
         uses: gradle/gradle-build-action@v2
