@@ -153,7 +153,7 @@ jobs:
 
 #       - name: Check Publish
 #         run: |
-#           echo "val=$(./gradlew tasks --all | grep -qw publish)" >> $GITHUB_OUTPUT
+#           echo "val=$(./gradlew tasks --all | grep -w publish)" >> $GITHUB_OUTPUT
 #         id: check_publish
         
       - name: Shoud Publish output   
@@ -161,7 +161,7 @@ jobs:
 
       - name: Check pubishDockerImage
         continue-on-error: true
-        run: ./gradlew tasks --all | grep -qw "publishDockerImage"
+        run: ./gradlew tasks --all | grep -w "publishDockerImage"
         id: publish_gcr
 
       - name: Shoud Publish GCR output   
