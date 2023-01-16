@@ -146,6 +146,9 @@ jobs:
 
       - run: echo "JAR publishing configured for branches - ${{ inputs.branchesToPublishArtifacts }}"
 
+      - name: Check tasks
+        run: ./gradlew tasks --all | grep -qw "publish"
+
       - name: Publish JAR Artifacts
         uses: gradle/gradle-build-action@v2
         if:  contains(fromJSON(inputs.branchesToPublishArtifacts), steps.extract_git_branch_info.outputs.branch_name) || startsWith(github.ref, 'refs/tags/v')
