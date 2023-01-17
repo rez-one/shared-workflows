@@ -157,7 +157,7 @@ jobs:
 #         id: check_publish
         
       - name: Shoud Publish output   
-        run: echo $steps.publish_jar.outcome
+        run: echo "outcome ${{ steps.publish_jar.outcome }}"
 
       - name: Check pubishDockerImage
         continue-on-error: true
@@ -165,7 +165,7 @@ jobs:
         id: publish_gcr
 
       - name: Shoud Publish GCR output   
-        run: echo $steps.publish_gcr.outcome
+        run: echo "outcome ${{ steps.publish_gcr.outcome }}"
 
       - name: Publish JAR Artifacts
         uses: gradle/gradle-build-action@v2
