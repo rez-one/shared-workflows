@@ -25,11 +25,6 @@ on:
         required: false
         default: '["dev", "qa", "test", "uat", "main", "master"]'
         type: string
-      skipTest: 
-        description: 'option to skip tests'
-        required: false
-        default: ''
-        type: string
       branchesToDeploy:
         description: 'Branches To Deploy'
         required: false
