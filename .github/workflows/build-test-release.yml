@@ -150,26 +150,21 @@ jobs:
         continue-on-error: true
         run: ./gradlew tasks --all | grep -w "publish"
         id: publish_jar
-
-#       - name: Check Publish
-#         run: |
-#           echo "val=$(./gradlew tasks --all | grep -w publish)" >> $GITHUB_OUTPUT
-#         id: check_publish
-        
-      - name: Shoud Publish output   
-        run: echo "outcome ${{ steps.publish_jar.outcome }}"
+       
+#       - name: Shoud Publish output   
+#         run: echo "outcome ${{ steps.publish_jar.outcome }}"
 
       - name: Check pubishDockerImage
         continue-on-error: true
         run: ./gradlew tasks --all | grep -w "publishDockerImage"
         id: publish_gcr
 
-      - name: Shoud Publish GCR output   
-        run: echo "outcome ${{ steps.publish_gcr.outcome }}"
+#       - name: Shoud Publish GCR output   
+#         run: echo "outcome ${{ steps.publish_gcr.outcome }}"
 
       - name: Publish JAR Artifacts
         uses: gradle/gradle-build-action@v2
-        if:  contains(fromJSON(inputs.branchesToPublishArtifacts), steps.extract_git_branch_info.outputs.branch_name) || startsWith(github.ref, 'refs/tags/v')
+        if: steps.publish_jar.outcome == 'success' && ( contains(fromJSON(inputs.branchesToPublishArtifacts), steps.extract_git_branch_info.outputs.branch_name) || startsWith(github.ref, 'refs/tags/v') )
         with:
           arguments: publish  -Pgithubref=${{github.ref}} -PbranchName=${{ steps.extract_git_branch_info.outputs.branch_name }}
 
@@ -182,7 +177,7 @@ jobs:
 
       - name: Publish Image to GCR
         uses: gradle/gradle-build-action@v2
-        if:  contains(fromJSON(inputs.branchesToPublishImages), steps.extract_git_branch_info.outputs.branch_name) || startsWith(steps.extract_git_branch_info.outputs.branch_name, 'release')
+        if:  steps.publish_jar.outcome == 'success' && ( contains(fromJSON(inputs.branchesToPublishImages), steps.extract_git_branch_info.outputs.branch_name) || startsWith(steps.extract_git_branch_info.outputs.branch_name, 'release') )
         with:
           arguments: publishDockerImage -PimageName=${{ steps.docker-image-config.outputs.image_name }}
 
