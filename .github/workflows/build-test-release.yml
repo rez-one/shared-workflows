@@ -144,12 +144,12 @@ jobs:
         with:
           files: "**/build/test-results/test/*.xml"
 
-      - name: Shuold publish
+      - name: Should Publish JARs
         continue-on-error: true
         run: ./gradlew tasks --all | grep -w "publish"
         id: publish_jar
        
-      - name: Shoud Publish JAR   
+      - name: Publish JAR branches   
         if: steps.publish_jar.outcome == 'success'
         run: echo "JAR publishing configured for branches - ${{ inputs.branchesToPublishArtifacts }}"
         
