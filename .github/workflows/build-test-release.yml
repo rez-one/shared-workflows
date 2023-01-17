@@ -148,7 +148,7 @@ jobs:
 
       - name: Shuold publish
         continue-on-error: true
-        run: ./gradlew tasks --all | grep -qw "publish"
+        run: ./gradlew tasks --all | grep -w "publish"
         id: publish_jar
 
 #       - name: Check Publish
