@@ -25,11 +25,6 @@ on:
         required: false
         default: '["dev", "qa", "test", "uat", "main", "master"]'
         type: string
-      skipTest: 
-        description: 'option to skip tests'
-        required: false
-        default: ''
-        type: string
       branchesToDeploy:
         description: 'Branches To Deploy'
         required: false
@@ -146,24 +141,18 @@ jobs:
 
       - run: echo "JAR publishing configured for branches - ${{ inputs.branchesToPublishArtifacts }}"
 
-      - name: Publish JAR Artifacts
-        uses: gradle/gradle-build-action@v2
-        if:  contains(fromJSON(inputs.branchesToPublishArtifacts), steps.extract_git_branch_info.outputs.branch_name) || startsWith(github.ref, 'refs/tags/v')
-        with:
-          arguments: publish  -Pgithubref=${{github.ref}} -PbranchName=${{ steps.extract_git_branch_info.outputs.branch_name }}
-
       - name: Configure Docker Image
         id: 'docker-image-config'
         run: |
           echo '::set-output name=image_name::${{ steps.extract_git_branch_info.outputs.branch_name }}-${{ steps.extract_git_branch_info.outputs.short_sha }}'
       - run: echo "The docker image name is ${{ steps.docker-image-config.outputs.image_name }}"
-      - run: echo "Image publishing configured for branches - ${{ inputs.branchesToPublishImages }}"
+      - run: echo "Image publishing configured for branches - ${{ inputs.branchesToPublishArtifacts }}"
 
-      - name: Publish Image to GCR
+      - name: Publish Artefacts
         uses: gradle/gradle-build-action@v2
-        if:  contains(fromJSON(inputs.branchesToPublishImages), steps.extract_git_branch_info.outputs.branch_name) || startsWith(steps.extract_git_branch_info.outputs.branch_name, 'release')
+        if:  contains(fromJSON(inputs.branchesToPublishArtifacts), steps.extract_git_branch_info.outputs.branch_name) || startsWith(steps.extract_git_branch_info.outputs.branch_name, 'release') || startsWith(github.ref, 'refs/tags/v')
         with:
-          arguments: publishDockerImage -PimageName=${{ steps.docker-image-config.outputs.image_name }}
+          arguments: publish -PimageName=${{ steps.docker-image-config.outputs.image_name }} -Pgithubref=${{github.ref}} -PbranchName=${{ steps.extract_git_branch_info.outputs.branch_name }}
 
       - name: List files in the repository
         run: |
