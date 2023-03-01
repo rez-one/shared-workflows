@@ -152,7 +152,7 @@ jobs:
         uses: gradle/gradle-build-action@v2
         if: steps.publish_jar.outcome == 'success' && ( contains(fromJSON(inputs.branchesToPublishArtifacts), steps.extract_git_branch_info.outputs.branch_name) || startsWith(github.ref, 'refs/tags/v') )
         with:
-          arguments: publish  -Pgithubref=${{github.ref}} -PbranchName=${{ steps.extract_git_branch_info.outputs.branch_name }}
+          arguments: --debug publish  -Pgithubref=${{github.ref}} -PbranchName=${{ steps.extract_git_branch_info.outputs.branch_name }}
 
       - name: Should Pubish DockerImage
         continue-on-error: true
