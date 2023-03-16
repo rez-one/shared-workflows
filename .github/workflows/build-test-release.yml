@@ -1,9 +1,5 @@
 name: Build and Test Quality Gate
 on:
-  pull_request:
-  push:
-    branches:
-      - releases/*
   workflow_call:
     secrets:
       SSH_JUMP_HOST_USER:
@@ -22,17 +18,22 @@ on:
       branchesToPublishArtifacts:
         description: 'Branches To Publish Artifacts'
         required: false
-        default: '["dev", "qa", "test", "uat", "main", "master","releases/*"]'
+        default: '["dev", "qa", "test", "uat", "main", "master"]'
         type: string
       branchesToPublishImages:
         description: 'Branches To Publish Docker Images to GCR'
         required: false
-        default: '["dev", "qa", "test", "uat", "main", "master","releases/*"]'
+        default: '["dev", "qa", "test", "uat", "main", "master"]'
         type: string
       branchesToDeploy:
         description: 'Branches To Deploy'
         required: false
         default: '["dev-env"]'
+        type: string
+      mandatoryBranchToPublish:
+        description: 'Branches To Publish Always'
+        required: false
+        default: '["releases/*"]'
         type: string
 jobs:
   build-and-test:
@@ -154,7 +155,7 @@ jobs:
         
       - name: Publish JAR Artifacts
         uses: gradle/gradle-build-action@v2
-        if: steps.publish_jar.outcome == 'success' && ( contains(fromJSON(inputs.branchesToPublishArtifacts), steps.extract_git_branch_info.outputs.branch_name) || startsWith(github.ref, 'refs/tags/v') )
+        if: steps.publish_jar.outcome == 'success' && ( contains(fromJSON(inputs.branchesToPublishArtifacts), steps.extract_git_branch_info.outputs.branch_name) || contains(fromJSON(inputs.mandatoryBranchToPublish), steps.extract_git_branch_info.outputs.branch_name) || startsWith(github.ref, 'refs/tags/v') )
         with:
           arguments: publish  -Pgithubref=${{github.ref}} -PbranchName=${{ steps.extract_git_branch_info.outputs.branch_name }}
 
@@ -175,7 +176,7 @@ jobs:
       
       - name: Publish Image to GCR
         uses: gradle/gradle-build-action@v2
-        if:  steps.publish_gcr.outcome == 'success' && ( contains(fromJSON(inputs.branchesToPublishImages), steps.extract_git_branch_info.outputs.branch_name) || startsWith(steps.extract_git_branch_info.outputs.branch_name, 'release') )
+        if:  steps.publish_gcr.outcome == 'success' && ( contains(fromJSON(inputs.branchesToPublishImages), steps.extract_git_branch_info.outputs.branch_name) || contains(fromJSON(inputs.mandatoryBranchToPublish), steps.extract_git_branch_info.outputs.branch_name) ||startsWith(steps.extract_git_branch_info.outputs.branch_name, 'release') )
         with:
           arguments: publishDockerImage -PimageName=${{ steps.docker-image-config.outputs.image_name }}
 
