@@ -42,10 +42,10 @@ jobs:
         shell: bash
         run: |
           if [[ ${{ github.event_name }} == 'pull_request' ]]; then
-            echo "##[set-output name=short_sha;]$(echo ${{ github.event.pull_request.head.sha }} | cut -c1-7)"
+            echo "##[set-output name=short_sha;]$(echo ${{ github.event.pull_request.head.sha }} | cut -c1-8)"
             echo "##[set-output name=branch_name;]$(echo ${GITHUB_HEAD_REF#refs/heads/})"
           else
-            echo "##[set-output name=short_sha;]$(echo ${{ github.sha }} | cut -c1-7)"
+            echo "##[set-output name=short_sha;]$(echo ${{ github.sha }} | cut -c1-8)"
             echo "##[set-output name=branch_name;]$(echo ${GITHUB_REF#refs/heads/})"
           fi          
         id: extract_git_branch_info
