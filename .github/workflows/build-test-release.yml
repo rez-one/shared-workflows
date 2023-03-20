@@ -93,14 +93,14 @@ jobs:
         run: |
           sudo echo "127.0.0.1 nexus.rez1.com nexus kubernetes" | sudo tee -a /etc/hosts
           sudo ssh -4 -fN -F /home/runner/.ssh/config -L0.0.0.0:443:nexus.rez1.com:443 nexus
-      - name: Configure GCR
-        run: |
-          mkdir -p $HOME/.gcr/
-          echo "$GCR_CREDENTIALS" > $HOME/.gcr/gcr_sa_key.json
-          chmod 600 $HOME/.gcr/gcr_sa_key.json
-          cat $HOME/.gcr/gcr_sa_key.json
-        env:
-          GCR_CREDENTIALS: ${{ secrets.GCR_CREDENTIALS }}
+#       - name: Configure GCR
+#         run: |
+#           mkdir -p $HOME/.gcr/
+#           echo "$GCR_CREDENTIALS" > $HOME/.gcr/gcr_sa_key.json
+#           chmod 600 $HOME/.gcr/gcr_sa_key.json
+#           cat $HOME/.gcr/gcr_sa_key.json
+#         env:
+#           GCR_CREDENTIALS: ${{ secrets.GCR_CREDENTIALS }}
 
       - name: GCP INSTALL
         uses: google-github-actions/setup-gcloud@v0
