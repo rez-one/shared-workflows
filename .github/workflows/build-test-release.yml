@@ -186,7 +186,10 @@ jobs:
         with:
           arguments: helmInstall  -P helm.release.target=dev  -PimageTag="${{ steps.docker-image-config.outputs.image_name }}"
 
-
+      - name: list docker image
+        uses: gradle/gradle-build-action@v2
+        with:
+          arguments: listDockerImage
       
 
 
