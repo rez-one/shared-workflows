@@ -52,21 +52,21 @@ jobs:
 
       - run: echo "🎉 The job was automatically triggered for the commit ${{ steps.extract_git_branch_info.outputs.short_sha }} in branch ${{ steps.extract_git_branch_info.outputs.branch_name }} by a ${{ github.event_name }} event."
       
-      - name: git short sha
-        run: |
-          git rev-parse --short HEAD
-
-      
       - name: Dump GitHub context
         id: github_context_step
         run: echo $JSON
         env:
           JSON: ${{ toJSON(github) }}
           
-#       - name: Check out repository code
-#         uses: actions/checkout@v2
-#         with:
-#           fetch-depth: 0
+      - name: Check out repository code
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - name: git short sha
+        run: |
+          git rev-parse --short HEAD
+
 
 #       - name: Set up JDK 8
 #         uses: actions/setup-java@v2
