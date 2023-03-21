@@ -67,7 +67,7 @@ jobs:
         run: |
           git rev-parse --short HEAD
 
-      - name: git short sha
+      - name: git branch name
         run: |
           git rev-parse --abbrev-ref HEAD
 
