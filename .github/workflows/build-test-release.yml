@@ -51,6 +51,16 @@ jobs:
         id: extract_git_branch_info
 
       - run: echo "🎉 The job was automatically triggered for the commit ${{ steps.extract_git_branch_info.outputs.short_sha }} in branch ${{ steps.extract_git_branch_info.outputs.branch_name }} by a ${{ github.event_name }} event."
+
+
+      - name: Extract branch name and commit hash 2
+        shell: bash
+        run: |
+            echo "##[set-output name=short_sha;]$(echo ${{ github.sha }} | cut -c1-8)"
+            echo "##[set-output name=branch_name;]$(echo ${GITHUB_REF#refs/heads/})"
+        id: extract_git_branch_info2
+
+      - run: echo "🎉 The job was automatically triggered for the commit ${{ steps.extract_git_branch_info2.outputs.short_sha }} in branch ${{ steps.extract_git_branch_info2.outputs.branch_name }} by a ${{ github.event_name }} event."
       
       - name: Dump GitHub context
         id: github_context_step
