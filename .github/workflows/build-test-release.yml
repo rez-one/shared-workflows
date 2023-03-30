@@ -136,7 +136,7 @@ jobs:
 
       - name: Publish Test Reports
         uses: EnricoMi/publish-unit-test-result-action@v1
-        if: false
+        if: always()
         with:
           files: "**/build/test-results/test/*.xml"
 
