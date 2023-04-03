@@ -219,3 +219,11 @@ jobs:
           min-coverage-overall: 40
           min-coverage-changed-files: 60
 
+      - name: Add diff coverage to PR
+        id: jacoco-diff
+        uses: madrapps/jacoco-report@v1.3
+        with:
+          paths: ${{ github.workspace }}/demo-project/app/build/reports/jacoco/diffCoverage/report.xml
+          token: ${{ secrets.GITHUB_TOKEN }}
+          min-coverage-overall: 40
+          min-coverage-changed-files: 60
