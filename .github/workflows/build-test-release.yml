@@ -151,11 +151,23 @@ jobs:
         with:
           arguments: clean build --refresh-dependencies
 
-#       - name: Publish Test Reports
-#         uses: EnricoMi/publish-unit-test-result-action@v1
-#         if: always()
-#         with:
-#           files: "**/build/test-results/test/*.xml"
+      - name: Publish Test Reports
+        uses: EnricoMi/publish-unit-test-result-action@v1
+        if: always()
+        with:
+          files: "**/build/test-results/test/*.xml"
+
+      - name: Publish Test Coverage Reports
+        uses: EnricoMi/publish-unit-test-result-action@v1
+        if: always()
+        with:
+          files: "**/build/reports/jacoco/test/jacocoTestReport.xml"
+
+      - name: Publish Test Diff Coverage Reports
+        uses: EnricoMi/publish-unit-test-result-action@v1
+        if: always()
+        with:
+          files: "**/build/reports/jacoco/diffCoverage/report.xml"
 
       - name: Should Publish JARs
         continue-on-error: true
