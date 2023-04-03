@@ -230,6 +230,8 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           min-coverage-overall: 40
           min-coverage-changed-files: 60
+          title: Total Coverage
+          update-comment: true
 
       - name: Add diff coverage to PR
         id: jacoco-diff
@@ -239,3 +241,5 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           min-coverage-overall: 40
           min-coverage-changed-files: 60
+          title: Diff Coverage
+          update-comment: true
