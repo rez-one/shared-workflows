@@ -38,6 +38,9 @@ jobs:
       ORG_GRADLE_PROJECT_nexusUsername: ${{ secrets.NEXUS_USERNAME }}
       ORG_GRADLE_PROJECT_nexusPassword: ${{ secrets.NEXUS_PASSWORD }}
       CI: false
+      JUMP_HOST_USER: ${{ secrets.SSH_JUMP_HOST_USER }}
+      JUMP_HOST_KEY: ${{ secrets.SSH_JUMP_HOST_KEY }}
+      JUMP_HOST: ${{ secrets.SSH_JUMP_HOST_IP }}
     steps:
       - name: Extract branch name and commit hash
         shell: bash
@@ -131,12 +134,20 @@ jobs:
 
       - name: Build with Gradle
         uses: gradle/gradle-build-action@v2
+        env:
+          NODE_OPTIONS: "--max_old_space_size=8192"
         with:
           arguments: clean build --refresh-dependencies
 
-      - name: Publish Test Reports
+      - name: Publish Test Reports Off
         uses: EnricoMi/publish-unit-test-result-action@v1
         if: false
+        with:
+          files: "**/build/test-results/test/*.xml"
+          
+      - name: Publish Test Reports
+        uses: mikepenz/action-junit-report@v3
+        if: always()
         with:
           files: "**/build/test-results/test/*.xml"
 
@@ -189,6 +200,5 @@ jobs:
 
 
       
-
 
 
