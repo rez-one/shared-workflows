@@ -38,9 +38,6 @@ jobs:
       ORG_GRADLE_PROJECT_nexusUsername: ${{ secrets.NEXUS_USERNAME }}
       ORG_GRADLE_PROJECT_nexusPassword: ${{ secrets.NEXUS_PASSWORD }}
       CI: false
-      JUMP_HOST_USER: ${{ secrets.SSH_JUMP_HOST_USER }}
-      JUMP_HOST_KEY: ${{ secrets.SSH_JUMP_HOST_KEY }}
-      JUMP_HOST: ${{ secrets.SSH_JUMP_HOST_IP }}
     steps:
       - name: Extract branch name and commit hash
         shell: bash
@@ -95,7 +92,7 @@ jobs:
 
       - name: Execute ssh port forward
         run: |
-          sudo echo "127.0.0.1 nexus.rez1.com nexus kubernetes" | sudo tee -a /etc/hosts
+          sudo echo "127.0.0.1 nexus.rez1.com nexus kubernetes data-blume-devdb-5.rez1.com" | sudo tee -a /etc/hosts
           sudo ssh -4 -fN -F /home/runner/.ssh/config -L0.0.0.0:443:nexus.rez1.com:443 nexus
       - name: Configure GCR
         run: |
@@ -128,6 +125,11 @@ jobs:
         run: |
           sed -i 's/172.16.0.18/kubernetes:8443/g' $KUBECONFIG
           sudo ssh -4 -fN -F /home/runner/.ssh/config -L0.0.0.0:8443:172.16.0.18:443 nexus
+
+      - name: SSH port forward for code_analysis db
+        continue-on-error: true
+        run: |
+          sudo ssh -4 -fN -F /home/runner/.ssh/config -L0.0.0.0:7193:data-blume-devdb-5.rez1.com:3306 nexus
 
       - name: docker compose up
         run: docker-compose up -d
