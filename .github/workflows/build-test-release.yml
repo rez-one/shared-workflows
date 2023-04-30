@@ -143,13 +143,13 @@ jobs:
 
       - name: Publish Test Reports Off
         uses: EnricoMi/publish-unit-test-result-action@v1
-        if: false
+        if: always()
         with:
           files: "**/build/test-results/test/*.xml"
           
       - name: Publish Test Reports
         uses: mikepenz/action-junit-report@v3
-        if: always()
+        if: false
         with:
           files: "**/build/test-results/test/*.xml"
 
