@@ -141,13 +141,13 @@ jobs:
         with:
           arguments: clean build --refresh-dependencies -PbranchName=${{ steps.extract_git_branch_info.outputs.branch_name }}
 
-      - name: Publish Test Reports Off
+      - name: Publish Test Reports
         uses: EnricoMi/publish-unit-test-result-action@v1
         if: always()
         with:
           files: "**/build/test-results/test/*.xml"
           
-      - name: Publish Test Reports
+      - name: Publish Test Reports Off
         uses: mikepenz/action-junit-report@v3
         if: false
         with:
