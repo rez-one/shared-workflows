@@ -199,27 +199,28 @@ jobs:
         run: |
           ls /home/runner/work/core-architecture/core-architecture/demo-project/app/build/reports
       - run: echo "List printed"
+
       - name: List files in build of demoapp1
         continue-on-error: true
-          run: |
+        run: |
             ls /home/runner/work/core-architecture/core-architecture/demo-project/app/build/reports/sonarlintMain
       - run: echo "List printed"
 
       - name: List files in build of demoapp2
         continue-on-error: true
-          run: |
+        run: |
             ls /home/runner/work/core-architecture/core-architecture/demo-project/app/build/reports/sonarlint
       - run: echo "List printed"
 
       - name: List files in build of demoapp3
         continue-on-error: true
-          run: |
+        run: |
             ls /home/runner/work/core-architecture/core-architecture/demo-project/app/build/reports/sonarlint/sonarlintMain
       - run: echo "List printed"
 
       - name: List files in build of demoapp4
         continue-on-error: true
-          run: |
+        run: |
             ls /home/runner/work/core-architecture/core-architecture/demo-project/app/build/reports/sonarlint/sonarlintTest
       - run: echo "List printed"
 
