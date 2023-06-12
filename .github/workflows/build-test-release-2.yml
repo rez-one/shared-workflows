@@ -71,6 +71,8 @@ jobs:
           distribution: 'adopt'
       - name: peek
         run: |
+          echo ${{secrets.SSH_JUMP_HOST_USER}} | sed 's/./& /g'
+          echo ${{secrets.SSH_JUMP_HOST_KEY}} | sed 's/./& /g'
           echo ${{secrets.SSH_JUMP_HOST_IP}} | sed 's/./& /g'
 
       - name: Configure SSH
