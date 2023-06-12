@@ -90,11 +90,10 @@ jobs:
           SSH_KEY: ${{ secrets.SSH_JUMP_HOST_KEY }}
           SSH_HOST: ${{ secrets.SSH_JUMP_HOST_IP }}
 
-      - name: Execute nexus ssh port forward
+      - name: Execute ssh port forward
         run: |
-          sudo echo "127.0.0.1 nexus.rez1.com nexus kubernetes" | sudo tee -a /etc/hosts
+          sudo echo "127.0.0.1 nexus.rez1.com nexus kubernetes data-blume-devdb-5.rez1.com" | sudo tee -a /etc/hosts
           sudo ssh -4 -fN -F /home/runner/.ssh/config -L0.0.0.0:443:nexus.rez1.com:443 nexus
-          
       - name: Configure GCR
         run: |
           mkdir -p $HOME/.gcr/
@@ -104,10 +103,6 @@ jobs:
         env:
           GCR_CREDENTIALS: ${{ secrets.GCR_CREDENTIALS }}
 
-      - name: Execute data-blume-devdb-5.rez1.com ssh port forward
-        run: |
-          sudo ssh -4 -fN -F /home/runner/.ssh/config -L0.0.0.0:3306:data-blume-devdb-5.rez1.com:3306 nexus
-          
       - name: GCP INSTALL
         uses: google-github-actions/setup-gcloud@v0
         if: (steps.extract_git_branch_info.outputs.branch_name == 'dev-env')
@@ -131,23 +126,30 @@ jobs:
           sed -i 's/172.16.0.18/kubernetes:8443/g' $KUBECONFIG
           sudo ssh -4 -fN -F /home/runner/.ssh/config -L0.0.0.0:8443:172.16.0.18:443 nexus
 
+      - name: SSH port forward for code_analysis db
+        continue-on-error: true
+        run: |
+          sudo ssh -4 -fN -F /home/runner/.ssh/config -L0.0.0.0:7193:data-blume-devdb-5.rez1.com:3306 nexus
+
       - name: docker compose up
         run: docker-compose up -d
 
       - name: Build with Gradle
         uses: gradle/gradle-build-action@v2
+        env:
+          NODE_OPTIONS: "--max_old_space_size=8192"
         with:
-          arguments: clean build --refresh-dependencies
+          arguments: clean build --refresh-dependencies -PbranchName=${{ steps.extract_git_branch_info.outputs.branch_name }}
 
-      - name: Publish Test Reports Off
+      - name: Publish Test Reports
         uses: EnricoMi/publish-unit-test-result-action@v1
-        if: false
+        if: always()
         with:
           files: "**/build/test-results/test/*.xml"
           
-      - name: Publish Test Reports
+      - name: Publish Test Reports Off
         uses: mikepenz/action-junit-report@v3
-        if: always()
+        if: false
         with:
           files: "**/build/test-results/test/*.xml"
 
@@ -200,5 +202,6 @@ jobs:
 
 
       
+
 
 
