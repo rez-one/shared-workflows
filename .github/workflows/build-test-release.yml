@@ -30,6 +30,7 @@ on:
         required: false
         default: '["dev-env"]'
         type: string
+permissions: write-all
 jobs:
   build-and-test:
     name: Build and Test Quality Gate Job
