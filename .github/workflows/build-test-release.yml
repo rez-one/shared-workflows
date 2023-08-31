@@ -219,7 +219,7 @@ jobs:
       - name: list docker image
         uses: gradle/gradle-build-action@v2
         with:
-          arguments: listDockerImage
+          arguments: listDockerImage -PimageName=releases-niagara-a78ff18c
                 
 
       # - name: Add coverage to PR
