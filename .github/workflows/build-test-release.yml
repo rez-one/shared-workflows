@@ -143,13 +143,13 @@ jobs:
           sed -i 's/172.16.0.18/kubernetes:8443/g' $KUBECONFIG
           sudo ssh -4 -fN -F /home/runner/.ssh/config -L0.0.0.0:8443:172.16.0.18:443 nexus
 
-      - name: docker compose up
-        run: docker-compose up -d
+      # - name: docker compose up
+      #   run: docker-compose up -d
 
-      - name: Build with Gradle
-        uses: gradle/gradle-build-action@v2
-        with:
-          arguments: clean build --refresh-dependencies
+      # - name: Build with Gradle
+      #   uses: gradle/gradle-build-action@v2
+      #   with:
+      #     arguments: clean build --refresh-dependencies
 
 #       - name: Publish Test Reports
 #         uses: EnricoMi/publish-unit-test-result-action@v1
@@ -169,77 +169,77 @@ jobs:
 #         with:
 #           files: "**/build/reports/jacoco/diffCoverage/report.xml"
 
-      - name: Should Publish JARs
-        continue-on-error: true
-        run: ./gradlew tasks --all | grep -w "publish"
-        id: publish_jar
+      # - name: Should Publish JARs
+      #   continue-on-error: true
+      #   run: ./gradlew tasks --all | grep -w "publish"
+      #   id: publish_jar
        
-      - name: Publish JAR branches   
-        if: steps.publish_jar.outcome == 'success'
-        run: echo "JAR publishing configured for branches - ${{ inputs.branchesToPublishArtifacts }}"
+      # - name: Publish JAR branches   
+      #   if: steps.publish_jar.outcome == 'success'
+      #   run: echo "JAR publishing configured for branches - ${{ inputs.branchesToPublishArtifacts }}"
         
-      - name: Publish JAR Artifacts
-        uses: gradle/gradle-build-action@v2
-        if: steps.publish_jar.outcome == 'success' && ( contains(fromJSON(inputs.branchesToPublishArtifacts), steps.extract_git_branch_info.outputs.branch_name) || startsWith(github.ref, 'refs/tags/v') )
-        with:
-          arguments: --debug publish  -Pgithubref=${{github.ref}} -PbranchName=${{ steps.extract_git_branch_info.outputs.branch_name }}
+      # - name: Publish JAR Artifacts
+      #   uses: gradle/gradle-build-action@v2
+      #   if: steps.publish_jar.outcome == 'success' && ( contains(fromJSON(inputs.branchesToPublishArtifacts), steps.extract_git_branch_info.outputs.branch_name) || startsWith(github.ref, 'refs/tags/v') )
+      #   with:
+      #     arguments: --debug publish  -Pgithubref=${{github.ref}} -PbranchName=${{ steps.extract_git_branch_info.outputs.branch_name }}
 
-      - name: Should Pubish DockerImage
-        continue-on-error: true
-        run: ./gradlew tasks --all | grep -w "publishDockerImage"
-        id: publish_gcr
+      # - name: Should Pubish DockerImage
+      #   continue-on-error: true
+      #   run: ./gradlew tasks --all | grep -w "publishDockerImage"
+      #   id: publish_gcr
 
-      - name: Configure Docker Image
-        if: steps.publish_gcr.outcome == 'success'
-        id: 'docker-image-config'
-        run: |
-          echo '::set-output name=image_name::${{ steps.extract_git_branch_info.outputs.branch_name }}-${{ steps.extract_git_branch_info.outputs.short_sha }}'
+      # - name: Configure Docker Image
+      #   if: steps.publish_gcr.outcome == 'success'
+      #   id: 'docker-image-config'
+      #   run: |
+      #     echo '::set-output name=image_name::${{ steps.extract_git_branch_info.outputs.branch_name }}-${{ steps.extract_git_branch_info.outputs.short_sha }}'
 
-      - name: Docker Image
-        if: steps.publish_gcr.outcome == 'success'
-        run: echo "The docker image name is ${{ steps.docker-image-config.outputs.image_name }} and Image publishing configured for branches - ${{ inputs.branchesToPublishImages }}"
+      # - name: Docker Image
+      #   if: steps.publish_gcr.outcome == 'success'
+      #   run: echo "The docker image name is ${{ steps.docker-image-config.outputs.image_name }} and Image publishing configured for branches - ${{ inputs.branchesToPublishImages }}"
       
-      - name: Publish Image to GCR
+      # - name: Publish Image to GCR
+      #   uses: gradle/gradle-build-action@v2
+      #   if:  steps.publish_gcr.outcome == 'success' && ( contains(fromJSON(inputs.branchesToPublishImages), steps.extract_git_branch_info.outputs.branch_name) || startsWith(steps.extract_git_branch_info.outputs.branch_name, 'release') )
+      #   with:
+      #     arguments: publishDockerImage -PimageName=${{ steps.docker-image-config.outputs.image_name }}
+
+      # - name: List files in the repository
+      #   run: |
+      #     ls ${{ github.workspace }}
+      # - run: echo "🍏 This job's status is ${{ job.status }}."
+
+      # - name: Dev Deploy
+      #   uses: gradle/gradle-build-action@v2
+      #   if: (steps.extract_git_branch_info.outputs.branch_name == 'dev-env')
+      #   with:
+      #      arguments: helmInstall  -P helm.release.target=dev  -PimageTag="${{ steps.docker-image-config.outputs.image_name }}"
+
+      - name: list docker image
         uses: gradle/gradle-build-action@v2
-        if:  steps.publish_gcr.outcome == 'success' && ( contains(fromJSON(inputs.branchesToPublishImages), steps.extract_git_branch_info.outputs.branch_name) || startsWith(steps.extract_git_branch_info.outputs.branch_name, 'release') )
         with:
-          arguments: publishDockerImage -PimageName=${{ steps.docker-image-config.outputs.image_name }}
-
-      - name: List files in the repository
-        run: |
-          ls ${{ github.workspace }}
-      - run: echo "🍏 This job's status is ${{ job.status }}."
-
-      - name: Dev Deploy
-        uses: gradle/gradle-build-action@v2
-        if: (steps.extract_git_branch_info.outputs.branch_name == 'dev-env')
-        with:
-           arguments: helmInstall  -P helm.release.target=dev  -PimageTag="${{ steps.docker-image-config.outputs.image_name }}"
-
-#       - name: list docker image
-#         uses: gradle/gradle-build-action@v2
-#         with:
-#           arguments: listDockerImage
+          arguments: listDockerImage
                 
 
-      - name: Add coverage to PR
-        id: jacoco
-        uses: madrapps/jacoco-report@v1.3
-        with:
-          paths: ${{ github.workspace }}/demo-project/app/build/reports/jacoco/test/jacocoTestReport.xml
-          token: ${{ secrets.GITHUB_TOKEN }}
-          min-coverage-overall: 40
-          min-coverage-changed-files: 60
-          title: Total Coverage
-          update-comment: true
+      # - name: Add coverage to PR
+      #   id: jacoco
+      #   uses: madrapps/jacoco-report@v1.3
+      #   with:
+      #     paths: ${{ github.workspace }}/demo-project/app/build/reports/jacoco/test/jacocoTestReport.xml
+      #     token: ${{ secrets.GITHUB_TOKEN }}
+      #     min-coverage-overall: 40
+      #     min-coverage-changed-files: 60
+      #     title: Total Coverage
+      #     update-comment: true
 
-      - name: Add diff coverage to PR
-        id: jacoco-diff
-        uses: madrapps/jacoco-report@v1.3
-        with:
-          paths: ${{ github.workspace }}/demo-project/app/build/reports/jacoco/diffCoverage/report.xml
-          token: ${{ secrets.GITHUB_TOKEN }}
-          min-coverage-overall: 40
-          min-coverage-changed-files: 60
-          title: Diff Coverage
-          update-comment: true
+      # - name: Add diff coverage to PR
+      #   id: jacoco-diff
+      #   uses: madrapps/jacoco-report@v1.3
+      #   with:
+      #     paths: ${{ github.workspace }}/demo-project/app/build/reports/jacoco/diffCoverage/report.xml
+      #     token: ${{ secrets.GITHUB_TOKEN }}
+      #     min-coverage-overall: 40
+      #     min-coverage-changed-files: 60
+      #     title: Diff Coverage
+      #     update-comment: true
