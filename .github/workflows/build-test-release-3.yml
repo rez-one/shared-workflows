@@ -178,7 +178,14 @@ jobs:
         if: steps.publish_gcr.outcome == 'success'
         id: 'docker-image-config'
         run: |
-          echo '::set-output name=image_name::${{ steps.extract_git_branch_info.outputs.branch_name }}-${{ steps.extract_git_branch_info.outputs.short_sha }}'
+          if [[ ${{ github.event_name }} == 'pull_request' ]]; then
+            echo '::set-output name=image_name::${{ steps.extract_git_branch_info.outputs.branch_name }}-${{ steps.extract_git_branch_info.outputs.short_sha }}-pr'
+          elif [[ ${{ github.event_name }} == 'push' ]]; then
+            echo '::set-output name=image_name::${{ steps.extract_git_branch_info.outputs.branch_name }}-${{ steps.extract_git_branch_info.outputs.short_sha }}'
+          else
+            echo '::set-output name=image_name::${{ steps.extract_git_branch_info.outputs.branch_name }}-${{ steps.extract_git_branch_info.outputs.short_sha }}'
+          fi  
+          
 
       - name: Docker Image
         if: steps.publish_gcr.outcome == 'success'
