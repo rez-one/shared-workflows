@@ -151,7 +151,7 @@ jobs:
             echo "##[set-output name=short_sha;]$(echo ${{ github.sha }} | cut -c1-8)"
             echo "##[set-output name=jid;]$(echo ${{ github.event.pull_request.title }} | sed -n 's/.*\[\(.*\)\].*/\1/p')"
           fi
-          id: extract_jira_id 
+        id: extract_jira_id 
       
       - name : Validate Jira ID
         run: |
