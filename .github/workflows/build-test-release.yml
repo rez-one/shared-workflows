@@ -148,7 +148,7 @@ jobs:
         run: |
             echo The Title of your PR is ${{ github.event.pull_request.title }}
             echo ${{ github.event.pull_request.title }} | sed -n 's/.*\[\(.*\)\].*/\1/p'
-            echo "::set-output name=jid::$(echo ${{ github.event.pull_request.title }} | sed -n 's/.*\[\(.*\)\].*/\1/p')"
+            echo "::set-output name=jid::echo ${{ github.event.pull_request.title }} | sed -n 's/.*\[\(.*\)\].*/\1/p'"
         id: extract_jira_id 
       
       - name : Validate Jira ID
