@@ -148,7 +148,8 @@ jobs:
           if [[ ${{ github.event_name }} == 'pull_request' ]]; then
             echo The Title of your PR is ${{ github.event.pull_request.title }}
             # echo ${{ github.event.pull_request.title }} | sed -n 's/.*\[\(.*\)\].*/\1/p'
-            echo "##[set-output name=jid;]$(echo ${{ github.event.pull_request.title }} | sed -n 's/.*\[\(.*\)\].*/\1/p'"
+            echo "##[set-output name=short_sha;]$(echo ${{ github.sha }} | cut -c1-8)"
+            echo "##[set-output name=jid;]$(echo ${{ github.event.pull_request.title }} | sed -n 's/.*\[\(.*\)\].*/\1/p')"
           fi
           id: extract_jira_id 
       
