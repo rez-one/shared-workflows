@@ -153,7 +153,7 @@ jobs:
       
       - name : Validate Jira ID
         run: |
-          curl --request GET --url https://rezone.atlassian.net/rest/api/2/issue/${{ steps.extract_jira_id.jira_id }}?fields=summary,customfield_12803 --header 'Authorization: Basic dmVlcmVzaC5rdW1hckBibHVtZWdsb2JhbC5jb206QVRBVFQzeEZmR0YwVGM1WGNmb2lzOW84RzA2VEFoTDB6WkR5WlhiYjVBaFU3amNub3gwZ3NTTmF1OG5TLWRXMkFPRS1tWkttc2pUeHQ5OTVZakpEd1d0UHVQVGFvaFdrYkhFOVNCajh1UFcxYlhZTnhyYlhyaXpvUDMydUQ3RFpSWGRodV9zNXpCa3lWTnV0ZUxPa0J0LVVhdFR0dzRnVXpNTW12cmUxUHBUY0tCTnRuZjA2cDlnPUUyQ0EzNTI4'
+          curl --request GET --url https://rezone.atlassian.net/rest/api/2/issue/${{ steps.extract_jira_id.outputs.jira_id }}?fields=summary,customfield_12803 --header 'Authorization: Basic dmVlcmVzaC5rdW1hckBibHVtZWdsb2JhbC5jb206QVRBVFQzeEZmR0YwVGM1WGNmb2lzOW84RzA2VEFoTDB6WkR5WlhiYjVBaFU3amNub3gwZ3NTTmF1OG5TLWRXMkFPRS1tWkttc2pUeHQ5OTVZakpEd1d0UHVQVGFvaFdrYkhFOVNCajh1UFcxYlhZTnhyYlhyaXpvUDMydUQ3RFpSWGRodV9zNXpCa3lWTnV0ZUxPa0J0LVVhdFR0dzRnVXpNTW12cmUxUHBUY0tCTnRuZjA2cDlnPUUyQ0EzNTI4'
 
       # - name: docker compose up
       #   run: docker-compose up -d
