@@ -143,13 +143,18 @@ jobs:
       #     sed -i 's/172.16.0.18/kubernetes:8443/g' $KUBECONFIG
       #     sudo ssh -4 -fN -F /home/runner/.ssh/config -L0.0.0.0:8443:172.16.0.18:443 nexus
 
-      - name : Print Title of PR
+      - name : Print JIRA ID from Title of PR
         run: |
           if [[ ${{ github.event_name }} == 'pull_request' ]]; then
             echo The Title of your PR is ${{ github.event.pull_request.title }}
-            echo ${{ github.event.pull_request.title }} | sed -n 's/.*\[\(.*\)\].*/\1/p'
+            # echo ${{ github.event.pull_request.title }} | sed -n 's/.*\[\(.*\)\].*/\1/p'
+            echo "##[set-output name=jid;]$(echo ${{ github.event.pull_request.title }} | sed -n 's/.*\[\(.*\)\].*/\1/p'"
           fi
-           
+          id: extract_jira_id 
+      
+      - name : Validate Jira ID
+        run: |
+          curl --request GET --url https://rezone.atlassian.net/rest/api/2/issue/${{ steps.extract_jira_id.jid }}?fields=summary,customfield_12803 --header 'Authorization: Basic dmVlcmVzaC5rdW1hckBibHVtZWdsb2JhbC5jb206QVRBVFQzeEZmR0YwVGM1WGNmb2lzOW84RzA2VEFoTDB6WkR5WlhiYjVBaFU3amNub3gwZ3NTTmF1OG5TLWRXMkFPRS1tWkttc2pUeHQ5OTVZakpEd1d0UHVQVGFvaFdrYkhFOVNCajh1UFcxYlhZTnhyYlhyaXpvUDMydUQ3RFpSWGRodV9zNXpCa3lWTnV0ZUxPa0J0LVVhdFR0dzRnVXpNTW12cmUxUHBUY0tCTnRuZjA2cDlnPUUyQ0EzNTI4'
 
       # - name: docker compose up
       #   run: docker-compose up -d
