@@ -144,13 +144,11 @@ jobs:
       #     sudo ssh -4 -fN -F /home/runner/.ssh/config -L0.0.0.0:8443:172.16.0.18:443 nexus
 
       - name : Print JIRA ID from Title of PR
+        if: ${{ github.event_name }} == 'pull_request'
         run: |
-          if [[ ${{ github.event_name }} == 'pull_request' ]]; then
             echo The Title of your PR is ${{ github.event.pull_request.title }}
             # echo ${{ github.event.pull_request.title }} | sed -n 's/.*\[\(.*\)\].*/\1/p'
-            echo "##[set-output name=short_sha;]$(echo ${{ github.sha }} | cut -c1-8)"
             echo "##[set-output name=jid;]$(echo ${{ github.event.pull_request.title }} | sed -n 's/.*\[\(.*\)\].*/\1/p')"
-          fi
         id: extract_jira_id 
       
       - name : Validate Jira ID
