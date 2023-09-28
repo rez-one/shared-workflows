@@ -150,15 +150,9 @@ jobs:
         run: |
             echo Extracting Jira Id from PR Title: ${{ github.event.pull_request.title }}
             echo PR titile should have Jira Id enclosed in a pair of square brackers like [AR-419]
+            echo ${{ github.event.pull_request.title }} | grep -e '\[\(.*\)\]'
             echo ${{ github.event.pull_request.title }} | sed -n 's/.*\[\(.*\)\].*/\1/p'
-            if [[ $? == 0 ]] 
-            then
-              echo "::set-output name=jira_id::$(echo ${{ github.event.pull_request.title }} | sed -n 's/.*\[\(.*\)\].*/\1/p')"
-            else
-              echo "Jira Id not found in PR Title"
-              echo "Jira Id should be included in PR Title enclosed in a pair of square brackers like [AR-419]" 
-              exit 1
-            fi  
+            echo "::set-output name=jira_id::$(echo ${{ github.event.pull_request.title }} | sed -n 's/.*\[\(.*\)\].*/\1/p')"
         id: extract_jira_id 
       
       - name : Validate Jira ID
