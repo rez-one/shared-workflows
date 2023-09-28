@@ -155,6 +155,7 @@ jobs:
             else
               echo "Jira Id not found in PR Title"
               echo "Jira Id should be included in PR Title enclosed in a pair of square brackers like [AR-419]" 
+              exit 1
             fi  
         id: extract_jira_id 
       
