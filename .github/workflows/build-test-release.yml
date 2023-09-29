@@ -181,7 +181,7 @@ jobs:
           curl -s --request GET \
           --url "https://rezone.atlassian.net/rest/api/2/issue/${{ steps.extract_jira_id.outputs.jira_id }}?fields=customfield_12803" \
           --header "Authorization: Basic $JIRA_API_TOKEN" \
-          | sed -n 's/.*fields.*{\(.*\)}.*/\1/p' | grep -i ${{ steps.extract_jira_id.outputs.release }}
+          | sed -n 's/.*fields.*{\(.*\)}.*/\1/p' | grep -i '${{ steps.extract_jira_id.outputs.release }}'
              
       # - name: docker compose up
       #   run: docker-compose up -d
