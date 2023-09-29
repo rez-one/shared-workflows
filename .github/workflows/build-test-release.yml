@@ -148,7 +148,7 @@ jobs:
       #     sudo ssh -4 -fN -F /home/runner/.ssh/config -L0.0.0.0:8443:172.16.0.18:443 nexus
 
       - name : Get Jira ID from Title of PR
-        if: ${{ github.event_name }} == 'pull_request' && startsWith( ${{ github.base_ref }} , 'releases')
+        if: github.event_name == 'pull_request' && startsWith( github.base_ref, 'releases')
         run: |
             echo Extracting Jira Id from PR Title: ${{ github.event.pull_request.title }}
             echo PR titile should have Jira Id enclosed in a pair of square brackers like [AR-419]
@@ -159,7 +159,7 @@ jobs:
         id: extract_jira_id 
       
       - name : Validate Jira ID
-        if: ${{ github.event_name }} == 'pull_request' && startsWith( ${{ github.base_ref }} , 'releases')
+        if: github.event_name == 'pull_request' && startsWith( github.base_ref, 'releases')
         env:
           JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
         run: |
@@ -172,7 +172,7 @@ jobs:
         id: validate_jira_id
 
       - name : Validate if Jira ID belongs to a release
-        if: ${{ github.event_name }} == 'pull_request' && startsWith( ${{ github.base_ref }} , 'releases')
+        if: github.event_name == 'pull_request' && startsWith( github.base_ref, 'releases')
         env:
           JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
         run: |
