@@ -198,7 +198,7 @@ jobs:
       - name: Validate Flyway
         uses: gradle/gradle-build-action@v2
         with:
-          arguments: validateFlyway -Penv=dev -PdbUser=dev -PdbPassword=dev8 -PjumpHost='10.16.0.3' -PlocalPort=7193
+          arguments: validateFlyway -Penv=dev -PdbUser=dev -PdbPassword=dev8 -PlocalPort=7193
 
 
 #       - name: Publish Test Reports
