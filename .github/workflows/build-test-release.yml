@@ -111,9 +111,13 @@ jobs:
 
       - name: Execute ssh port forward
         run: |
-          sudo echo "127.0.0.1 nexus.rez1.com nexus kubernetes" | sudo tee -a /etc/hosts
+          sudo echo "127.0.0.1 nexus.rez1.com nexus kubernetes data-blume-devdb-5.rez1.com" | sudo tee -a /etc/hosts
           sudo ssh -4 -fN -F /home/runner/.ssh/config -L0.0.0.0:443:nexus.rez1.com:443 nexus
 
+      - name: SSH port forward for dev db
+        continue-on-error: true
+        run: |
+          sudo ssh -4 -fN -F /home/runner/.ssh/config -L0.0.0.0:7193:data-blume-devdb-5.rez1.com:3306 nexus
 
 #       - name: Configure GCR
 #         run: |
@@ -194,7 +198,7 @@ jobs:
       - name: Validate Flyway
         uses: gradle/gradle-build-action@v2
         with:
-          arguments: validateFlyway -Penv=dev -PdbUser=dev -PdbPassword=dev8 -PjumpHost='10.16.0.3'
+          arguments: validateFlyway -Penv=dev -PdbUser=dev -PdbPassword=dev8 -PjumpHost='10.16.0.3' -PlocalPort=7193
 
 
 #       - name: Publish Test Reports
