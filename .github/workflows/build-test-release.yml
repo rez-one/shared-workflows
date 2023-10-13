@@ -43,7 +43,6 @@ jobs:
       - name: Remove unnecessary files
         run: |
           sudo rm -rf /usr/share/dotnet
-          sudo rm -rf "$AGENT_TOOLSDIRECTORY"
       - name: Extract branch name and commit hash
         shell: bash
         run: |
