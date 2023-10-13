@@ -40,10 +40,6 @@ jobs:
       ORG_GRADLE_PROJECT_nexusPassword: ${{ secrets.NEXUS_PASSWORD }}
       CI: false
     steps:
-      - name: Maximize build space
-        uses: easimon/maximize-build-space@master
-        with:
-          remove-dotnet: 'true'
       - name: Extract branch name and commit hash
         shell: bash
         run: |
