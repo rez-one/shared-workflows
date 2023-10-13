@@ -195,7 +195,7 @@ jobs:
       #     arguments: clean build --refresh-dependencies
 
 
-      - name: Validate Flyway
+      - name: AR-438Validate Flyway
         uses: gradle/gradle-build-action@v2
         with:
           arguments: validateFlyway -Penv=dev -PdbUser=dev -PdbPassword=dev8 -PlocalPort=7193
