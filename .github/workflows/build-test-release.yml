@@ -194,7 +194,7 @@ jobs:
       - name: Release tag
         if: startsWith(github.ref, 'refs/tags/RC')
         run: |
-          echo ${{ github.ref }} | sed -n 's/refs/tags/(.*\)/\1/p'
+          echo ${{ github.ref }} | sed -n 's/refs\/tags\/\(.*\)/\1/p'
       
       - name: Publish Image to GCR
         uses: gradle/gradle-build-action@v2
