@@ -175,7 +175,7 @@ jobs:
         id: publish_gcr
 
       - name: Configure Docker Image
-        if: steps.publish_gcr.outcome == 'success'
+        if: steps.publish_gcr.outcome == 'success' && !startsWith(github.ref, 'refs/tags/RC')
         id: 'docker-image-config'
         run: |
           if [[ ${{ github.event_name }} == 'pull_request' ]]; then
@@ -185,22 +185,34 @@ jobs:
           else
             echo '::set-output name=image_name::${{ steps.extract_git_branch_info.outputs.branch_name }}-${{ steps.extract_git_branch_info.outputs.short_sha }}'
           fi  
-          
-
-      - name: Docker Image
-        if: steps.publish_gcr.outcome == 'success'
-        run: echo "The docker image name is ${{ steps.docker-image-config.outputs.image_name }} and Image publishing configured for branches - ${{ inputs.branchesToPublishImages }}"
 
       - name: Release tag
+        id: rc_tag
         if: startsWith(github.ref, 'refs/tags/RC')
         run: |
-          echo ${{ github.ref }} | sed -n 's/refs\/tags\/\(.*\)/\1/p'
-      
+          echo "::set-output name=rc_image_tag::${{ github.ref }} | sed -n 's/refs\/tags\/\(.*\)/\1/p'"
+
+      - name: Configure RC Docker Image
+        if: startsWith(github.ref, 'refs/tags/RC')
+        id: docker-rc-image-name
+        run: |
+            echo '::set-output name=image_name::${{ steps.rc_tag.outputs.rc_image_tag }}-${{ steps.extract_git_branch_info.outputs.short_sha }}'
+          
+      - name: Docker Image
+        if: steps.publish_gcr.outcome == 'success'
+        run: echo "The docker image name is ${{ steps.docker-image-config.outputs.image_name }} ${{ steps.docker-rc-image-name.outputs.image_name }} and Image publishing configured for branches - ${{ inputs.branchesToPublishImages }}"
+    
       - name: Publish Image to GCR
         uses: gradle/gradle-build-action@v2
-        if:  steps.publish_gcr.outcome == 'success' && ( contains(fromJSON(inputs.branchesToPublishImages), steps.extract_git_branch_info.outputs.branch_name) || startsWith(steps.extract_git_branch_info.outputs.branch_name, 'releases') || startsWith(github.ref, 'refs/tags/RC') )
+        if:  steps.publish_gcr.outcome == 'success' && ( (contains(fromJSON(inputs.branchesToPublishImages), steps.extract_git_branch_info.outputs.branch_name) || startsWith(steps.extract_git_branch_info.outputs.branch_name, 'releases')) && !startsWith(github.ref, 'refs/tags/RC') )
         with:
           arguments: publishDockerImage -PimageName=${{ steps.docker-image-config.outputs.image_name }}
+
+      - name: Publish RC Image to GCR
+        uses: gradle/gradle-build-action@v2
+        if:  steps.publish_gcr.outcome == 'success' && startsWith(github.ref, 'refs/tags/RC')
+        with:
+          arguments: publishDockerImage -PimageName=${{ steps.docker-rc-image-name.outputs.image_name }}
 
       - name: List files in the repository
         run: |
