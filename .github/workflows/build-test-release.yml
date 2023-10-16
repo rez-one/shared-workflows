@@ -190,7 +190,7 @@ jobs:
         id: rc_tag
         if: steps.publish_gcr.outcome == 'success' && startsWith(github.ref, 'refs/tags/RC')
         run: |
-          echo "::set-output name=rc_image_tag::${{ github.ref }} | sed -n 's/refs\/tags\/\(.*\)/\1/p'"
+          echo "::set-output name=rc_image_tag::$(echo ${{ github.ref }} | sed -n 's/refs\/tags\/\(.*\)/\1/p')"
 
       - name: Configure RC Docker Image
         if: steps.publish_gcr.outcome == 'success' && startsWith(github.ref, 'refs/tags/RC')
