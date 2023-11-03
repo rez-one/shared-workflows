@@ -178,13 +178,6 @@ jobs:
           echo "Changed Files coverage ${{ steps.jacoco.outputs.coverage-changed-files }}"
           echo "Coverage coveragePercentage ${{ steps.jacoco_reporter.outputs.coveragePercentage }}"
           echo "Coverage coveragePercentageString ${{ steps.jacoco_reporter.outputs.coveragePercentageString }}"
-
-      - name: Publish Coverage Workflow Build Summary
-        run: echo "${{ steps.jacoco_reporter.outputs.coverageSummary }}" >> $GITHUB_STEP_SUMMARY
-
-      - name: report
-        run: ls - R
-
       - name: Publish Test Reports
         uses: EnricoMi/publish-unit-test-result-action@v1
         if: always()
