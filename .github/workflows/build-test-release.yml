@@ -144,15 +144,28 @@ jobs:
           NODE_OPTIONS: "--max_old_space_size=8192"
         with:
           arguments: clean build --refresh-dependencies -PbranchName=${{ steps.extract_git_branch_info.outputs.branch_name }}
-      - name: Add coverage to PR
-        id: jacoco
-        uses: madrapps/jacoco-report@v1.6.1
+#      - name: Add coverage to PR
+#        id: jacoco
+#        uses: madrapps/jacoco-report@v1.6.1
+#        with:
+#          paths: |
+#            ${{ github.workspace }}/**/build/reports/jacoco/jacocoTestReport.xml
+#          token: ${{ secrets.GITHUB_TOKEN }}
+#          min-coverage-overall: 40
+#          min-coverage-changed-files: 60
+
+      - name: JaCoCo Code Coverage Report
+        id: jacoco_reporter
+        uses: PavanMudigonda/jacoco-reporter@v4.8
         with:
-          paths: |
-            ${{ github.workspace }}/**/build/reports/jacoco/jacocoTestReport.xml
-          token: ${{ secrets.GITHUB_TOKEN }}
-          min-coverage-overall: 40
-          min-coverage-changed-files: 60
+          coverage_results_path: ${{ github.workspace }}/build/reports/jacoco/test/jacocoTestReport.xml
+          coverage_report_name: Coverage
+          coverage_report_title: JaCoCo
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          skip_check_run: false
+          minimum_coverage: 80
+          fail_below_threshold: true
+          publish_only_summary: false
 
       - name: Publish Test Reports
         uses: EnricoMi/publish-unit-test-result-action@v1
