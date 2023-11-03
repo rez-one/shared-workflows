@@ -155,13 +155,13 @@ jobs:
 #          min-coverage-changed-files: 60
       - name: List files in the repository
         run: |
-          ls ${{ github.workspace }}/build/reports/jacoco
+          ls ${{ github.workspace }}/build/reports/jacoco/test
       - name: Check test coverage
         id: test-coverage
         uses: johanvanhelden/gha-clover-test-coverage-check@v1
         with:
           percentage: "50"
-          filename: "${{ github.workspace }}/build/reports/jacoco/jacocoTestReport.xml"
+          filename: "${{ github.workspace }}/build/reports/jacoco/test/jacocoTestReport.xml"
 
       - name: Publish Test Reports
         uses: EnricoMi/publish-unit-test-result-action@v1
