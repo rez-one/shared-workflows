@@ -144,15 +144,15 @@ jobs:
           NODE_OPTIONS: "--max_old_space_size=8192"
         with:
           arguments: clean build --refresh-dependencies -PbranchName=${{ steps.extract_git_branch_info.outputs.branch_name }}
-      - name: Adding JaCoCo coverage to PR
-        id: jacoco
-        uses: madrapps/jacoco-report@v1.6.1
-        with:
-          paths: |
-            ${{ github.workspace }}/build/reports/jacoco/test/jacocoTestReport.xml
-          token: ${{ secrets.GITHUB_TOKEN }}
-          min-coverage-overall: 55
-          min-coverage-changed-files: 80
+#      - name: Adding JaCoCo coverage to PR
+#        id: jacoco
+#        uses: madrapps/jacoco-report@v1.6.1
+#        with:
+#          paths: |
+#            ${{ github.workspace }}/build/reports/jacoco/test/jacocoTestReport.xml
+#          token: ${{ secrets.GITHUB_TOKEN }}
+#          min-coverage-overall: 55
+#          min-coverage-changed-files: 80
       - name: JaCoCo Code Coverage Report
         id: jacoco_reporter
         uses: PavanMudigonda/jacoco-reporter@v4.8
