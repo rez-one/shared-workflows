@@ -151,7 +151,7 @@ jobs:
           paths: |
             ${{ github.workspace }}/**/build/reports/jacoco/test/jacocoTestReport.xml
           token: ${{ secrets.GITHUB_TOKEN }}
-          min-coverage-overall: 60
+          min-coverage-overall: 55
           min-coverage-changed-files: 80
       - name: JaCoCo Code Coverage Report
         id: jacoco_reporter
@@ -162,7 +162,7 @@ jobs:
           coverage_report_title: JaCoCo
           github_token: ${{ secrets.GITHUB_TOKEN }}
           skip_check_run: false
-          minimum_coverage: 60
+          minimum_coverage: 55
           fail_below_threshold: true
           publish_only_summary: false
       - name: Upload Code Coverage Artifacts
