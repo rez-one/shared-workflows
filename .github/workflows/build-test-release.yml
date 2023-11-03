@@ -155,7 +155,7 @@ jobs:
 #          min-coverage-changed-files: 60
       - name: List files in the repository
         run: |
-          ls ${{ github.workspace }}
+          ls ${{ github.workspace }}/build/reports/jacoco
       - name: Check test coverage
         id: test-coverage
         uses: johanvanhelden/gha-clover-test-coverage-check@v1
