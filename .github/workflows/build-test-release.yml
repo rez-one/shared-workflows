@@ -150,7 +150,7 @@ jobs:
         with:
           paths: |
             ${{ github.workspace }}/**/build/reports/jacoco/jacocoTestReport.xml
-          token: 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
+          token: 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
           min-coverage-overall: 40
           min-coverage-changed-files: 60
 
