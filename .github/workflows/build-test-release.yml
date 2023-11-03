@@ -144,7 +144,7 @@ jobs:
           NODE_OPTIONS: "--max_old_space_size=8192"
         with:
           arguments: clean build --refresh-dependencies -PbranchName=${{ steps.extract_git_branch_info.outputs.branch_name }}
-      - name: Add coverage to PR
+      - name: Adding JaCoCo coverage to PR
         id: jacoco
         uses: madrapps/jacoco-report@v1.6.1
         with:
@@ -153,19 +153,37 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           min-coverage-overall: 60
           min-coverage-changed-files: 80
+      - name: JaCoCo Code Coverage Report
+        id: jacoco_reporter
+        uses: PavanMudigonda/jacoco-reporter@v4.8
+        with:
+          coverage_results_path: ${{ github.workspace }}/build/reports/jacoco/test/jacocoTestReport.xml
+          coverage_report_name: Coverage
+          coverage_report_title: JaCoCo
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          skip_check_run: false
+          minimum_coverage: 60
+          fail_below_threshold: true
+          publish_only_summary: false
+      - name: Upload Code Coverage Artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: code-coverage-report
+          path: "*/coverage-results.md"
+          retention-days: 1
 
-#      - name: JaCoCo Code Coverage Report
-#        id: jacoco_reporter
-#        uses: PavanMudigonda/jacoco-reporter@v4.8
-#        with:
-#          coverage_results_path: ${{ github.workspace }}/build/reports/jacoco/test/jacocoTestReport.xml
-#          coverage_report_name: Coverage
-#          coverage_report_title: JaCoCo
-#          github_token: ${{ secrets.GITHUB_TOKEN }}
-#          skip_check_run: false
-#          minimum_coverage: 80
-#          fail_below_threshold: true
-#          publish_only_summary: false
+      - name: Get the Coverage info
+        run: |
+          echo "Total coverage coverage-overall ${{ steps.jacoco.outputs.coverage-overall }}"
+          echo "Changed Files coverage ${{ steps.jacoco.outputs.coverage-changed-files }}"
+          echo "Coverage coveragePercentage ${{ steps.jacoco_reporter.outputs.coveragePercentage }}"
+          echo "Coverage coveragePercentageString ${{ steps.jacoco_reporter.outputs.coveragePercentageString }}"
+
+      - name: Publish Coverage Workflow Build Summary
+        run: echo "${{ steps.jacoco_reporter.outputs.coverageSummary }}" >> $GITHUB_STEP_SUMMARY
+
+      - name: report
+        run: ls - R
 
       - name: Publish Test Reports
         uses: EnricoMi/publish-unit-test-result-action@v1
