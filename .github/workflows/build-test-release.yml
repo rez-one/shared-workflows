@@ -144,6 +144,9 @@ jobs:
           NODE_OPTIONS: "--max_old_space_size=8192"
         with:
           arguments: clean build --refresh-dependencies -PbranchName=${{ steps.extract_git_branch_info.outputs.branch_name }}
+      - name: List files in the repository
+        run: |
+          ls ${{ github.workspace }}/build
 #      - name: Adding JaCoCo coverage to PR
 #        id: jacoco
 #        uses: madrapps/jacoco-report@v1.6.1
