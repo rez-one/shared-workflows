@@ -143,6 +143,7 @@ jobs:
         env:
           NODE_OPTIONS: "--max_old_space_size=8192"
           token: ${{ secrets.GITHUB_TOKEN }}
+          repo: ${{ GITHUB_REPOSITORY}}
         with:
           arguments: clean build --refresh-dependencies -PbranchName=${{ steps.extract_git_branch_info.outputs.branch_name }}
       - name: List files in the repository
