@@ -73,9 +73,7 @@ jobs:
         with:
           java-version: '8'
           distribution: 'adopt'
-      - name: List files in the repository1
-        run: |
-          echo "🎉 The secret value ${{ secrets.GITHUB_TOKEN }}."
+
       - name: Configure SSH
         run: |
           pwd
@@ -144,11 +142,12 @@ jobs:
         uses: gradle/gradle-build-action@v2
         env:
           NODE_OPTIONS: "--max_old_space_size=8192"
+          token: ${{ secrets.GITHUB_TOKEN }}
         with:
           arguments: clean build --refresh-dependencies -PbranchName=${{ steps.extract_git_branch_info.outputs.branch_name }}
       - name: List files in the repository
         run: |
-          echo "🎉 The secret value ${{ secrets.GITHUB_TOKEN }}."
+          printenv
 #      - name: Adding JaCoCo coverage to PR
 #        id: jacoco
 #        uses: madrapps/jacoco-report@v1.6.1
@@ -158,24 +157,24 @@ jobs:
 #          token: ${{ secrets.GITHUB_TOKEN }}
 #          min-coverage-overall: 55
 #          min-coverage-changed-files: 80
-      - name: JaCoCo Code Coverage Report
-        id: jacoco_reporter
-        uses: PavanMudigonda/jacoco-reporter@v4.8
-        with:
-          coverage_results_path: "**/build/reports/jacoco/test/jacocoTestReport.xml"
-          coverage_report_name: Coverage
-          coverage_report_title: JaCoCo
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          skip_check_run: false
-          minimum_coverage: 60
-          fail_below_threshold: true
-          publish_only_summary: false
-      - name: Upload Code Coverage Artifacts
-        uses: actions/upload-artifact@v2
-        with:
-          name: code-coverage-report
-          path: "*/coverage-results.md"
-          retention-days: 1
+#      - name: JaCoCo Code Coverage Report
+#        id: jacoco_reporter
+#        uses: PavanMudigonda/jacoco-reporter@v4.8
+#        with:
+#          coverage_results_path: "**/build/reports/jacoco/test/jacocoTestReport.xml"
+#          coverage_report_name: Coverage
+#          coverage_report_title: JaCoCo
+#          github_token: ${{ secrets.GITHUB_TOKEN }}
+#          skip_check_run: false
+#          minimum_coverage: 60
+#          fail_below_threshold: true
+#          publish_only_summary: false
+#      - name: Upload Code Coverage Artifacts
+#        uses: actions/upload-artifact@v2
+#        with:
+#          name: code-coverage-report
+#          path: "*/coverage-results.md"
+#          retention-days: 1
 
       - name: Get the Coverage info
         run: |
