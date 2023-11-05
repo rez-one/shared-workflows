@@ -73,7 +73,9 @@ jobs:
         with:
           java-version: '8'
           distribution: 'adopt'
-
+      - name: List files in the repository1
+        run: |
+          echo "🎉 The secret value ${{ secrets.GITHUB_TOKEN }}."
       - name: Configure SSH
         run: |
           pwd
@@ -146,7 +148,7 @@ jobs:
           arguments: clean build --refresh-dependencies -PbranchName=${{ steps.extract_git_branch_info.outputs.branch_name }}
       - name: List files in the repository
         run: |
-          printenv
+          echo "🎉 The secret value ${{ secrets.GITHUB_TOKEN }}."
 #      - name: Adding JaCoCo coverage to PR
 #        id: jacoco
 #        uses: madrapps/jacoco-report@v1.6.1
