@@ -31,6 +31,8 @@ on:
         default: '["dev-env"]'
         type: string
 permissions: write-all
+env:
+  coveragePath: 'hello!!'
 jobs:
   build-and-test:
     name: Build and Test Quality Gate Job
