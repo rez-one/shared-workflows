@@ -32,7 +32,7 @@ on:
         type: string
 permissions: write-all
 env:
-  coveragePath: 'hello!!'
+  coveragePath: ''
 jobs:
   build-and-test:
     name: Build and Test Quality Gate Job
