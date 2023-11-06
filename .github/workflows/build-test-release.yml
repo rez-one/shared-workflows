@@ -145,6 +145,9 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
         with:
           arguments: clean build --refresh-dependencies -PbranchName=${{ steps.extract_git_branch_info.outputs.branch_name }}
+      - name: List files in the repository
+        run: |
+          printenv
 #      - name: Adding JaCoCo coverage to PR
 #        id: jacoco
 #        uses: madrapps/jacoco-report@v1.6.1
