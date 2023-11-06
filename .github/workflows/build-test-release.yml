@@ -142,7 +142,10 @@ jobs:
         uses: gradle/gradle-build-action@v2
         env:
           NODE_OPTIONS: "--max_old_space_size=8192"
-          token: ${{ secrets.GITHUB_TOKEN }}
+          c_token: ${{ secrets.GITHUB_TOKEN }}
+          c_event: ${{ github.event_name }}
+          c_h_sha: ${{ github.event.pull_request.head.sha }}
+          c_sha: ${{ github.sha }}
         with:
           arguments: clean build --refresh-dependencies -PbranchName=${{ steps.extract_git_branch_info.outputs.branch_name }}
       - name: List files in the repository
