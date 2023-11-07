@@ -153,7 +153,7 @@ jobs:
       - name: Publish coverage report
         uses: gradle/gradle-build-action@v2
         with:
-          arguments: build pushCoverageReport -PbranchName=${{ steps.extract_git_branch_info.outputs.branch_name }}
+          arguments: pushCoverageReport -PbranchName=${{ steps.extract_git_branch_info.outputs.branch_name }}
       - name: List files in the repository
         run: |
           printenv
