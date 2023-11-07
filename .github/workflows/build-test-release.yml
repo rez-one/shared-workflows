@@ -154,6 +154,9 @@ jobs:
         uses: gradle/gradle-build-action@v2
         with:
           arguments: pushCoverageReport -PbranchName=${{ steps.extract_git_branch_info.outputs.branch_name }}
+        env:
+          c_token: ${{ secrets.GITHUB_TOKEN }}
+          c_h_sha: ${{ github.event.pull_request.head.sha }}
       - name: List files in the repository
         run: |
           printenv
