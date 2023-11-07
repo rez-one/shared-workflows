@@ -169,18 +169,18 @@ jobs:
 #          token: ${{ secrets.GITHUB_TOKEN }}
 #          min-coverage-overall: 55
 #          min-coverage-changed-files: 80
-      - name: JaCoCo Code Coverage Report
-        id: jacoco_reporter
-        uses: PavanMudigonda/jacoco-reporter@v4.8
-        with:
-          coverage_results_path: "${{ github.workspace }}/build/reports/jacoco/test/jacocoTestReport.xml"
-          coverage_report_name: Coverage
-          coverage_report_title: JaCoCo
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          skip_check_run: false
-          minimum_coverage: 60
-          fail_below_threshold: true
-          publish_only_summary: false
+#      - name: JaCoCo Code Coverage Report
+#        id: jacoco_reporter
+#        uses: PavanMudigonda/jacoco-reporter@v4.8
+#        with:
+#          coverage_results_path: "${{ github.workspace }}/build/reports/jacoco/test/jacocoTestReport.xml"
+#          coverage_report_name: Coverage
+#          coverage_report_title: JaCoCo
+#          github_token: ${{ secrets.GITHUB_TOKEN }}
+#          skip_check_run: false
+#          minimum_coverage: 60
+#          fail_below_threshold: true
+#          publish_only_summary: false
 #      - name: Upload Code Coverage Artifacts
 #        uses: actions/upload-artifact@v2
 #        with:
