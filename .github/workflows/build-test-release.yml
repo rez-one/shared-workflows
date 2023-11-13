@@ -47,6 +47,7 @@ jobs:
             echo "##[set-output name=short_sha;]$(echo ${{ github.event.pull_request.head.sha }} | cut -c1-8)"
             echo "##[set-output name=branch_name;]$(echo ${GITHUB_HEAD_REF#refs/heads/})"
           elif [[ "${{ github.ref }}" == "refs/tags/*" ]]; then
+            echo "in elif"
             echo "##[set-output name=short_sha;]$(echo ${{ github.sha }} | cut -c1-8)"
             echo "##[set-output name=branch_name;]$(echo ${{ github.ref }} | sed -n 's/refs\/tags\/\(.*\)/\1/p')"
           else
