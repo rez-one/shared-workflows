@@ -203,7 +203,7 @@ jobs:
       - name: audit build task
         continue-on-error: true
         run: |
-          ./gradlew tasks --all | grep -w -m 1 "auditBuild" | xargs ./gradlew
+          ./gradlew tasks --all | grep -w -m 1 "auditBuild" | xargs ./gradlew -PbranchName=${{ steps.extract_git_branch_info.outputs.branch_name }}
         id: audit-task
 
 #       - name: Publish Test Reports
