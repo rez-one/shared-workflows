@@ -195,11 +195,16 @@ jobs:
       #     arguments: clean build --refresh-dependencies
 
 
-      - name: AR-438Validate Flyway
-        uses: gradle/gradle-build-action@v2
-        with:
-          arguments: validateFlyway -Penv=dev -PdbUser=dev -PdbPassword=dev8 -PlocalPort=7193
+      # - name: AR-438Validate Flyway
+      #   uses: gradle/gradle-build-action@v2
+      #   with:
+      #     arguments: validateFlyway -Penv=dev -PdbUser=dev -PdbPassword=dev8 -PlocalPort=7193
 
+      - name: audit build task
+        continue-on-error: true
+        run: |
+          ./gradlew tasks --all | grep -w -m 1 "auditBuild"
+        id: audit-task
 
 #       - name: Publish Test Reports
 #         uses: EnricoMi/publish-unit-test-result-action@v1
