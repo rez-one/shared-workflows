@@ -217,6 +217,12 @@ jobs:
         with:
           arguments: publishDockerImage -PimageName=${{ steps.docker-rc-image-name.outputs.image_name }}
 
+      - name: audit build
+        continue-on-error: true
+        run: |
+          ./gradlew tasks --all | grep -w -m 1 "auditBuild" | xargs ./gradlew -PbranchName=${{ steps.extract_git_branch_info.outputs.branch_name }}
+        id: audit-task
+        
       - name: List files in the repository
         run: |
           ls ${{ github.workspace }}
