@@ -203,11 +203,16 @@ jobs:
       #   with:
       #     arguments: validateFlyway -Penv=dev -PdbUser=dev -PdbPassword=dev8 -PlocalPort=7193
 
-      - name: audit build task
+      - name: all gradle tasks
+        continue-on-error: true
+        run: |
+          ./gradlew tasks --all
+        id: gradle-tasks
+
+      - name: audit build task 
         continue-on-error: true
         run: |
           ./gradlew tasks --all | grep -w -m 1 "auditBuild"
-          ./gradlew tasks --all
         id: audit-task
 
 #       ./gradlew tasks --all | grep -w -m 1 "auditBuild" | xargs ./gradlew -PbranchName=${{ steps.extract_git_branch_info.outputs.branch_name }}
