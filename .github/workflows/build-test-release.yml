@@ -206,6 +206,7 @@ jobs:
       - name: audit build task
         continue-on-error: true
         run: |
+          ./gradlew tasks --all | grep -w -m 1 "auditBuild"
           ./gradlew tasks --all
         id: audit-task
 
