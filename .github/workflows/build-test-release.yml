@@ -206,8 +206,11 @@ jobs:
       - name: audit build task
         continue-on-error: true
         run: |
-          ./gradlew tasks --all | grep -w -m 1 "auditBuild" | xargs ./gradlew -PbranchName=${{ steps.extract_git_branch_info.outputs.branch_name }}
+          ./gradlew tasks --all
         id: audit-task
+
+#       ./gradlew tasks --all | grep -w -m 1 "auditBuild" | xargs ./gradlew -PbranchName=${{ steps.extract_git_branch_info.outputs.branch_name }}
+
 #       - name: Publish Test Reports
 #         uses: EnricoMi/publish-unit-test-result-action@v1
 #         if: always()
