@@ -104,7 +104,7 @@ jobs:
           curl -s --request GET \
           --url "https://rezone.atlassian.net/rest/api/2/issue/${{ steps.extract_jira_id.outputs.jira_id }}?fields=customfield_12803" \
           --header "Authorization: Basic $JIRA_API_TOKEN" \
-          | sed -n 's/.*fields.*{\(.*\)}.*/\1/p' | grep -i -e '${{ steps.extract_jira_id.outputs.release }}' 
+          | sed -n 's/.*fields.*{\(.*\)}.*/\1/p' | grep -i -e '${{ steps.extract_jira_id.outputs.release }}' -e 'Feb1724-Maintenance'
 
 # To validate arbitrary FixVersion add additional expressions for the FixVersion 
 # example:    grep -i -e '${{ steps.extract_jira_id.outputs.release }}' -e 'Jan0424-Maintenance' -e 'Feb1724-Maintenance'
