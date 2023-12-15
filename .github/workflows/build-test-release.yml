@@ -106,7 +106,7 @@ jobs:
           --header "Authorization: Basic $JIRA_API_TOKEN" \
           | sed -n 's/.*fields.*{\(.*\)}.*/\1/p' | grep -i -e '${{ steps.extract_jira_id.outputs.release }}' -e 'Feb1724-Maintenance'
 
-# To validate arbitrary FixVersion add additional expressions for the FixVersion 
+# To validate arbitrary FixVersion add additional expressions for the FixVersion as below and include it in the first echo statement too
 # example:    grep -i -e '${{ steps.extract_jira_id.outputs.release }}' -e 'Jan0424-Maintenance' -e 'Feb1724-Maintenance'
 # JIRA ID Validation for PRs against releases branch - end
 
