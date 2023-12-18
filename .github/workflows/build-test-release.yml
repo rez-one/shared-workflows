@@ -100,7 +100,7 @@ jobs:
         env:
           JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
         run: |
-          echo '${{ steps.extract_jira_id.outputs.jira_id }} should belong to the ${{ github.base_ref }}  OR Feb1724-Maintenance'
+          echo '${{ steps.extract_jira_id.outputs.jira_id }} should belong to the ${{ github.base_ref }}'
           curl -s --request GET \
           --url "https://rezone.atlassian.net/rest/api/2/issue/${{ steps.extract_jira_id.outputs.jira_id }}?fields=customfield_12803" \
           --header "Authorization: Basic $JIRA_API_TOKEN" \
