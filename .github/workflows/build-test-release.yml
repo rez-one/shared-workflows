@@ -14,6 +14,8 @@ on:
         required: false
       NEXUS_PASSWORD:
         required: false
+      JIRA_API_TOKEN:
+        required: false
     inputs:
       branchesToPublishArtifacts:
         description: 'Branches To Publish Artifacts'
@@ -67,6 +69,44 @@ jobs:
         uses: actions/checkout@v2
         with:
           fetch-depth: 0
+
+# JIRA ID Validation for PRs against releases branch ---- start
+      - name : Get Jira ID from Title of PR
+        if: github.event_name == 'pull_request' && startsWith( github.base_ref, 'releases')
+        run: |
+            echo Extracting Jira Id from PR Title: ${{ github.event.pull_request.title }}
+            echo PR titile should have Jira Id enclosed in a pair of square brackers like [AR-419]
+            echo ${{ github.event.pull_request.title }} | sed -n 's/.*\[\(.*\)\].*/\1/p'
+            echo "::set-output name=jira_id::$(echo ${{ github.event.pull_request.title }} | sed -n 's/.*\[\(.*\)\].*/\1/p')"
+            echo "::set-output name=release::$(echo ${{ github.base_ref }} | sed -n 's/releases\/\(.*\)/\1/p')"
+            echo ${{ github.event.pull_request.title }} | grep -e '\[\(.*\)\]'
+        id: extract_jira_id 
+      
+      - name : Validate Jira ID
+        if: github.event_name == 'pull_request' && startsWith( github.base_ref, 'releases')
+        env:
+          JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
+        run: |
+          echo 'There should be a valid issue on Jira for the id ${{ steps.extract_jira_id.outputs.jira_id }}'
+          curl -s --request GET \
+          --url "https://rezone.atlassian.net/rest/api/2/issue/${{ steps.extract_jira_id.outputs.jira_id }}?fields=summary" \
+          --header "Authorization: Basic $JIRA_API_TOKEN" \
+          -w '\nstatus%{http_code}\n' | grep status200
+        
+        id: validate_jira_id
+
+      - name : Validate if Jira ID belongs to a release
+        if: github.event_name == 'pull_request' && startsWith( github.base_ref, 'releases')
+        env:
+          JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
+        run: |
+          echo '${{ steps.extract_jira_id.outputs.jira_id }} should belong to the ${{ github.base_ref }}'
+          curl -s --request GET \
+          --url "https://rezone.atlassian.net/rest/api/2/issue/${{ steps.extract_jira_id.outputs.jira_id }}?fields=customfield_12803" \
+          --header "Authorization: Basic $JIRA_API_TOKEN" \
+          | sed -n 's/.*fields.*{\(.*\)}.*/\1/p' | grep -i '${{ steps.extract_jira_id.outputs.release }}'
+  
+# JIRA ID Validation for PRs against releases branch - end
 
       - name: Set up JDK 8
         uses: actions/setup-java@v2
