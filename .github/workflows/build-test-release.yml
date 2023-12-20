@@ -15,7 +15,7 @@ on:
       NEXUS_PASSWORD:
         required: false
       JIRA_API_TOKEN:
-        required: false
+        required: true
     inputs:
       branchesToPublishArtifacts:
         description: 'Branches To Publish Artifacts'
