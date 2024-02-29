@@ -196,6 +196,8 @@ jobs:
 
       - name: docker compose kafka2 logs
         run: docker-compose logs kafka2  
+      - name: kafka cat  logs
+        run: docker-compose logs kafkacat    
 
       - name: Build with Gradle
         uses: gradle/gradle-build-action@v2
