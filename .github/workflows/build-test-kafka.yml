@@ -182,8 +182,8 @@ jobs:
       - name: docker compose up
         run: docker-compose up -d
 
-      # - name: sleeping 20
-        # run: sleep 20
+      - name: sleeping 20
+        run: sleep 20
 
       - name: docker compose zookeeper logs
         run: docker-compose logs zookeeper
