@@ -176,7 +176,8 @@ jobs:
           sudo ssh -4 -fN -F /home/runner/.ssh/config -L0.0.0.0:7193:data-blume-devdb-5.rez1.com:3306 nexus
 
       - name: list
-        run: sudo mkdir -m 777 /var/lib/zookeeper/data
+        # run: sudo mkdir -m 777 /var/lib/zookeeper/data
+        run: ls /var/lib
 
       - name: docker compose up
         run: docker-compose up -d
