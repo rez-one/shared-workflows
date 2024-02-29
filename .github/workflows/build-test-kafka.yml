@@ -176,7 +176,7 @@ jobs:
           sudo ssh -4 -fN -F /home/runner/.ssh/config -L0.0.0.0:7193:data-blume-devdb-5.rez1.com:3306 nexus
 
       - name: list
-        run: docker build -t mongo-cdc:0.0.1 .
+        run: printenv
         # run: sudo mkdir -m 777 -p /var/lib/zookeeper/data
 
       - name: docker compose up
