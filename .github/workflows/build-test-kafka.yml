@@ -180,9 +180,15 @@ jobs:
 
       - name: sleeping 20
         run: sleep 20
+
+      - name: docker compose zookeeper logs
+        run: docker-compose logs zookeeper
         
       - name: docker compose kafka logs
         run: docker-compose logs kafka
+
+      - name: docker compose kafka2 logs
+        run: docker-compose logs kafka2  
 
       - name: Build with Gradle
         uses: gradle/gradle-build-action@v2
