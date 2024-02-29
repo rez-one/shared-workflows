@@ -177,7 +177,7 @@ jobs:
 
       - name: list
         # run: sudo mkdir -m 777 /var/lib/zookeeper/data
-        run: sudo mkdir -p /var/lib/zookeeper/data
+        run: sudo mkdir -m 777 -p /var/lib/zookeeper/data
 
       - name: docker compose up
         run: docker-compose up -d
