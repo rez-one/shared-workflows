@@ -175,6 +175,9 @@ jobs:
         run: |
           sudo ssh -4 -fN -F /home/runner/.ssh/config -L0.0.0.0:7193:data-blume-devdb-5.rez1.com:3306 nexus
 
+      - name: list
+        run: ls -la
+
       - name: docker compose up
         run: docker-compose up -d
 
@@ -183,6 +186,9 @@ jobs:
 
       - name: docker compose zookeeper logs
         run: docker-compose logs zookeeper
+
+      - name: docker compose zookeeper2 logs
+        run: docker-compose logs zookeeper2
         
       - name: docker compose kafka logs
         run: docker-compose logs kafka
