@@ -186,6 +186,7 @@ jobs:
           arguments: clean build --refresh-dependencies -PbranchName=${{ steps.extract_git_branch_info.outputs.branch_name }} -PbaseRef=${{ github.base_ref }}
 
       - name: Publish Test Reports
+        continue-on-error: true
         uses: EnricoMi/publish-unit-test-result-action@v1
         if: always()
         with:
