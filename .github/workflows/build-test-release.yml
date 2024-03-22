@@ -75,7 +75,8 @@ jobs:
         if: github.event_name == 'pull_request' && startsWith( github.base_ref, 'releases')
         run: |
             echo Extracting Jira Id from PR Title: '${{ github.event.pull_request.title }}'
-            echo PR titile should have Jira Id enclosed in a pair of square brackers like [AR-419]
+            echo PR titile should have Jira Id enclosed in a pair of square brackers like [AR-419], 
+            ecn and title should not have any other special characters in the title
             echo '${{ github.event.pull_request.title }}' | sed -n 's/.*\[\(.*\)\].*/\1/p'
             echo "::set-output name=jira_id::$(echo '${{ github.event.pull_request.title }}' | sed -n 's/.*\[\(.*\)\].*/\1/p')"
             echo "::set-output name=release::$(echo ${{ github.base_ref }} | sed -n 's/releases\/\(.*\)/\1/p')"
