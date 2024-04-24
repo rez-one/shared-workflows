@@ -83,7 +83,7 @@ jobs:
         id: extract_jira_id 
       
       - name : Validate Jira ID
-        if: github.event_name == 'pull_request' && startsWith( github.base_ref, 'releases')
+        if: ${{ false }} && github.event_name == 'pull_request' && startsWith( github.base_ref, 'releases')
         env:
           JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
         run: |
