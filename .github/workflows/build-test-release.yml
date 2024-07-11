@@ -88,9 +88,9 @@ jobs:
           JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
         run: |
           echo 'There should be a valid issue on Jira for the id ${{ steps.extract_jira_id.outputs.jira_id }}'
-          result = curl -s --request GET \
+          result = $(curl -s --request GET \
           --url "https://rezone.atlassian.net/rest/api/2/issue/${{ steps.extract_jira_id.outputs.jira_id }}?fields=summary" \
-          --header "Authorization: Basic $JIRA_API_TOKEN"
+          --header "Authorization: Basic $JIRA_API_TOKEN")
           echo $result
           curl -s --request GET \
           --url "https://rezone.atlassian.net/rest/api/2/issue/${{ steps.extract_jira_id.outputs.jira_id }}?fields=summary" \
