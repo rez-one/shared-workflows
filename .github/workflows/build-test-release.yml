@@ -114,6 +114,17 @@ jobs:
           java-version: '8'
           distribution: 'adopt'
 
+      - name: Set up Nodejs
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20'
+
+      - name: Configure GCR
+        run: |
+          echo "node -v"
+        
+          
+
       - name: Configure SSH
         run: |
           pwd
