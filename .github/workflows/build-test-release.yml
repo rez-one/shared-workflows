@@ -121,7 +121,7 @@ jobs:
 
       - name: Configure GCR
         run: |
-          echo "node -v"
+          echo $(node -v)
         
           
 
