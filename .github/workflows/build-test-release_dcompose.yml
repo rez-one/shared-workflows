@@ -215,7 +215,7 @@ jobs:
 
       - name: Should Pubish DockerImage
         continue-on-error: true
-        run: ./gradlew tasks --all | grep -w "publishDockerImage"
+        run: ./gradlew tasks --all | grep -w "publishDockerImageGAR"
         id: publish_gcr
 
       - name: Configure Docker Image
@@ -250,13 +250,13 @@ jobs:
         uses: gradle/gradle-build-action@v2
         if:  steps.publish_gcr.outcome == 'success' && ( (contains(fromJSON(inputs.branchesToPublishImages), steps.extract_git_branch_info.outputs.branch_name) || startsWith(steps.extract_git_branch_info.outputs.branch_name, 'releases')) && !startsWith(github.ref, 'refs/tags/RC') )
         with:
-          arguments: publishDockerImage -PimageName=${{ steps.docker-image-config.outputs.image_name }}
+          arguments: publishDockerImageGAR -PimageName=${{ steps.docker-image-config.outputs.image_name }}
 
       - name: Publish RC Image to GCR
         uses: gradle/gradle-build-action@v2
         if:  steps.publish_gcr.outcome == 'success' && startsWith(github.ref, 'refs/tags/RC')
         with:
-          arguments: publishDockerImage -PimageName=${{ steps.docker-rc-image-name.outputs.image_name }}
+          arguments: publishDockerImageGAR -PimageName=${{ steps.docker-rc-image-name.outputs.image_name }}
 
       - name: audit build
         continue-on-error: true
