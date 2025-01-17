@@ -169,9 +169,10 @@ jobs:
           pwd
           ls -ltr
           ls -ltr ./APP.DATAWAREHOUSE.ETL/build/libs
-          echo "$SSH_KEY"
-          echo "SSH_USER"
-          echo "SSH_HOST"
+          echo "$SSH_KEY" > tmp.txt
+          echo "$SSH_USER"
+          echo "$SSH_HOST"
+          cat tmp.txt
         env:
           SSH_USER: ${{ secrets.SSH_JUMP_HOST_USER }}
           SSH_KEY: ${{ secrets.SSH_JUMP_HOST_KEY }}
