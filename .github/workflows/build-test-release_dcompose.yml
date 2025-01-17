@@ -147,36 +147,6 @@ jobs:
         env:
           GCR_CREDENTIALS: ${{ secrets.GCR_CREDENTIALS }}
 
-      - name: GCP INSTALL
-        uses: google-github-actions/setup-gcloud@v0
-        if: (steps.extract_git_branch_info.outputs.branch_name == 'dev-env')
-
-      - name: DEV Authenticate to Google Cloud
-        uses: google-github-actions/auth@v0
-        if: (steps.extract_git_branch_info.outputs.branch_name == 'dev-env')
-        with:
-          credentials_json: ${{ secrets.DEPLOY_DEV_CREDENTIALS }}
-
-      - name: DEV GKE CREDENTIAL
-        uses: google-github-actions/get-gke-credentials@v0
-        if: (steps.extract_git_branch_info.outputs.branch_name == 'dev-env')
-        with:
-          cluster_name: 'blume-shared-infra-k8s-dev'
-          location: 'us-west1-b'
-
-      - name: DEV Configure KUBECONFIG
-        if: (steps.extract_git_branch_info.outputs.branch_name == 'dev-env')
-        run: |
-          sed -i 's/172.16.0.18/kubernetes:8443/g' $KUBECONFIG
-          sudo ssh -4 -fN -F /home/runner/.ssh/config -L0.0.0.0:8443:172.16.0.18:443 nexus
-
-      - name: SSH port forward for code_analysis db
-        continue-on-error: true
-        run: |
-          sudo ssh -4 -fN -F /home/runner/.ssh/config -L0.0.0.0:7193:data-blume-devdb-5.rez1.com:3306 nexus
-
-      - name: docker compose up
-        run: docker compose up -d
 
       - name: Build with Gradle
         uses: gradle/gradle-build-action@v2
@@ -184,19 +154,6 @@ jobs:
           NODE_OPTIONS: "--max_old_space_size=8192"
         with:
           arguments: clean build --refresh-dependencies -PbranchName=${{ steps.extract_git_branch_info.outputs.branch_name }} -PbaseRef=${{ github.base_ref }}
-
-      - name: Publish Test Reports
-        continue-on-error: true
-        uses: EnricoMi/publish-unit-test-result-action@v1
-        if: always()
-        with:
-          files: "**/build/test-results/test/*.xml"
-          
-      - name: Publish Test Reports Off
-        uses: mikepenz/action-junit-report@v3
-        if: false
-        with:
-          files: "**/build/test-results/test/*.xml"
 
       - name: Should Publish JARs
         continue-on-error: true
@@ -206,74 +163,24 @@ jobs:
       - name: Publish JAR branches   
         if: steps.publish_jar.outcome == 'success'
         run: echo "JAR publishing configured for branches - ${{ inputs.branchesToPublishArtifacts }}"
+
+      - name: Test Dir
+        run: |
+          pwd
+          ls -ltr
+          ls -ltr ./APP.DATAWAREHOUSE.ETL/build/libs
+          echo "$SSH_KEY"
+          echo "SSH_USER"
+          echo "SSH_HOST"
+        env:
+          SSH_USER: ${{ secrets.SSH_JUMP_HOST_USER }}
+          SSH_KEY: ${{ secrets.SSH_JUMP_HOST_KEY }}
+          SSH_HOST: ${{ secrets.SSH_JUMP_HOST_IP }}
         
       - name: Publish JAR Artifacts
         uses: gradle/gradle-build-action@v2
         if: steps.publish_jar.outcome == 'success' && ( contains(fromJSON(inputs.branchesToPublishArtifacts), steps.extract_git_branch_info.outputs.branch_name) || startsWith(steps.extract_git_branch_info.outputs.branch_name, 'releases') || startsWith(github.ref, 'refs/tags/v') )
         with:
           arguments: publish  -Pgithubref=${{github.ref}} -PbranchName=${{ steps.extract_git_branch_info.outputs.branch_name }}
-
-      - name: Should Pubish DockerImage
-        continue-on-error: true
-        run: ./gradlew tasks --all | grep -w "publishDockerImage"
-        id: publish_gcr
-
-      - name: Configure Docker Image
-        if: steps.publish_gcr.outcome == 'success' && !startsWith(github.ref, 'refs/tags/RC')
-        id: 'docker-image-config'
-        run: |
-          if [[ ${{ github.event_name }} == 'pull_request' ]]; then
-            echo '::set-output name=image_name::${{ steps.extract_git_branch_info.outputs.branch_name }}-${{ steps.extract_git_branch_info.outputs.short_sha }}-pr'
-          elif [[ ${{ github.event_name }} == 'push' ]]; then
-            echo '::set-output name=image_name::${{ steps.extract_git_branch_info.outputs.branch_name }}-${{ steps.extract_git_branch_info.outputs.short_sha }}'
-          else
-            echo '::set-output name=image_name::${{ steps.extract_git_branch_info.outputs.branch_name }}-${{ steps.extract_git_branch_info.outputs.short_sha }}'
-          fi  
-
-      - name: Release tag
-        id: rc_tag
-        if: steps.publish_gcr.outcome == 'success' && startsWith(github.ref, 'refs/tags/RC')
-        run: |
-          echo "::set-output name=rc_image_tag::$(echo ${{ github.ref }} | sed -n 's/refs\/tags\/\(.*\)/\1/p')"
-
-      - name: Configure RC Docker Image
-        if: steps.publish_gcr.outcome == 'success' && startsWith(github.ref, 'refs/tags/RC')
-        id: docker-rc-image-name
-        run: |
-            echo '::set-output name=image_name::${{ steps.rc_tag.outputs.rc_image_tag }}-${{ steps.extract_git_branch_info.outputs.short_sha }}'
-          
-      - name: Docker Image
-        if: steps.publish_gcr.outcome == 'success'
-        run: echo "The docker image name is ${{ steps.docker-image-config.outputs.image_name }} ${{ steps.docker-rc-image-name.outputs.image_name }} and Image publishing configured for branches - ${{ inputs.branchesToPublishImages }}"
-    
-      - name: Publish Image to GCR
-        uses: gradle/gradle-build-action@v2
-        if:  steps.publish_gcr.outcome == 'success' && ( (contains(fromJSON(inputs.branchesToPublishImages), steps.extract_git_branch_info.outputs.branch_name) || startsWith(steps.extract_git_branch_info.outputs.branch_name, 'releases')) && !startsWith(github.ref, 'refs/tags/RC') )
-        with:
-          arguments: publishDockerImage -PimageName=${{ steps.docker-image-config.outputs.image_name }}
-
-      - name: Publish RC Image to GCR
-        uses: gradle/gradle-build-action@v2
-        if:  steps.publish_gcr.outcome == 'success' && startsWith(github.ref, 'refs/tags/RC')
-        with:
-          arguments: publishDockerImage -PimageName=${{ steps.docker-rc-image-name.outputs.image_name }}
-
-      - name: audit build
-        continue-on-error: true
-        run: |
-          ./gradlew tasks --all | grep -w -m 1 "auditBuild" | xargs ./gradlew -PbranchName=${{ steps.extract_git_branch_info.outputs.branch_name }}
-        id: audit-task
-        
-      - name: List files in the repository
-        run: |
-          ls ${{ github.workspace }}
-      - run: echo "🍏 This job's status is ${{ job.status }}."
-
-      - name: Dev Deploy
-        uses: gradle/gradle-build-action@v2
-        if: (steps.extract_git_branch_info.outputs.branch_name == 'dev-env')
-        with:
-          arguments: helmInstall  -P helm.release.target=dev  -PimageTag="${{ steps.docker-image-config.outputs.image_name }}"
-
 
       
