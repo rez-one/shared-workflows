@@ -32,8 +32,18 @@ on:
         required: false
         default: '["dev-env"]'
         type: string
+  workflow_dispatch:      
 permissions: write-all
 jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch'  # Ensure this job only runs on manual trigger
+    environment:
+      name: production   # This environment can have required reviewers set in GitHub settings
+    needs: build-and-test
+    steps:
+      - uses: actions/checkout@v2
+      - run: echo "Deploying to production..."
   build-and-test:
     name: Build and Test Quality Gate Job
     runs-on: ubuntu-latest
