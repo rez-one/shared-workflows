@@ -182,6 +182,13 @@ jobs:
         run: |
           sudo curl -L "https://github.com/docker/compose/releases/download/$(curl -s https://api.github.com/repos/docker/compose/releases/latest | grep 'tag_name' | cut -d\" -f4)/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
           sudo chmod +x /usr/local/bin/docker-compose
+
+      - name: Pre dokcer compose Gradle build
+        uses: gradle/gradle-build-action@v2
+        env:
+          NODE_OPTIONS: "--max_old_space_size=8192"
+        with:
+          arguments: clean build -x test --refresh-dependencies -PbranchName=${{ steps.extract_git_branch_info.outputs.branch_name }} -PbaseRef=${{ github.base_ref }}    
         
       - name: docker compose up
         run: docker-compose up -d
@@ -191,7 +198,7 @@ jobs:
         env:
           NODE_OPTIONS: "--max_old_space_size=8192"
         with:
-          arguments: clean build --refresh-dependencies -PbranchName=${{ steps.extract_git_branch_info.outputs.branch_name }} -PbaseRef=${{ github.base_ref }}
+          arguments: build --refresh-dependencies -PbranchName=${{ steps.extract_git_branch_info.outputs.branch_name }} -PbaseRef=${{ github.base_ref }}
 
       - name: Publish Test Reports
         continue-on-error: true
