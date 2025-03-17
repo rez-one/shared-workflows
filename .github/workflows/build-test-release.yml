@@ -188,7 +188,7 @@ jobs:
         env:
           NODE_OPTIONS: "--max_old_space_size=8192"
         with:
-          arguments: clean build -x test --refresh-dependencies -PbranchName=${{ steps.extract_git_branch_info.outputs.branch_name }} -PbaseRef=${{ github.base_ref }}    
+          arguments: clean assemble
         
       - name: docker compose up
         run: docker-compose up -d
@@ -198,7 +198,7 @@ jobs:
         env:
           NODE_OPTIONS: "--max_old_space_size=8192"
         with:
-          arguments: build --refresh-dependencies -PbranchName=${{ steps.extract_git_branch_info.outputs.branch_name }} -PbaseRef=${{ github.base_ref }}
+          arguments: clean build --refresh-dependencies -PbranchName=${{ steps.extract_git_branch_info.outputs.branch_name }} -PbaseRef=${{ github.base_ref }}
 
       - name: Publish Test Reports
         continue-on-error: true
