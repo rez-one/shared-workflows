@@ -185,7 +185,11 @@ jobs:
 
       - name: Check Host IP
         run: |
-          ip -4 addr show docker0    
+          ip -4 addr show docker0
+
+      - name: Check docker IP
+        run: |
+          docker network inspect bridge | grep Gateway    
 
       - name: Pre dokcer compose Gradle build
         uses: gradle/gradle-build-action@v2
