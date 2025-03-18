@@ -204,11 +204,14 @@ jobs:
         
       - name: docker compose up
         run: docker-compose up -d
+        env:
+          HOST_IP: ${{ steps.dhost_ip.outputs.HOST_IP }}
 
       - name: Build with Gradle
         uses: gradle/gradle-build-action@v2
         env:
           NODE_OPTIONS: "--max_old_space_size=8192"
+          HOST_IP: ${{ steps.dhost_ip.outputs.HOST_IP }}
         with:
           arguments: clean build --refresh-dependencies -PbranchName=${{ steps.extract_git_branch_info.outputs.branch_name }} -PbaseRef=${{ github.base_ref }}
 
