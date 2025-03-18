@@ -189,8 +189,12 @@ jobs:
 
       - name: Check docker IP
         run: |
-          docker network inspect bridge | grep Gateway    
-
+          echo "::set-output name=HOST_IP::$( docker network inspect bridge | grep Gateway | awk -F'"' '{print $4}' )" 
+        id: dhost_ip
+      - name: Publish docker IP
+        run: |
+          echo '${{ steps.dhost_ip.outputs.HOST_IP }}'  
+      
       - name: Pre dokcer compose Gradle build
         uses: gradle/gradle-build-action@v2
         env:
