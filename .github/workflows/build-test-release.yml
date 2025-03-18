@@ -203,7 +203,7 @@ jobs:
           arguments: processor:assemble
         
       - name: docker compose up
-        run: docker-compose up -d
+        run: HOST_IP=${{ steps.dhost_ip.outputs.HOST_IP }} docker-compose up -d
         env:
           HOST_IP: ${{ steps.dhost_ip.outputs.HOST_IP }}
 
