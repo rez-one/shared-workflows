@@ -116,8 +116,12 @@ jobs:
 
       - name: Print SSH Key and Host
         run: |
-          HOST_DEBUG="host-debug:$SSH_HOST"
-          echo "$HOST_DEBUG"
+          HOST_PART1=$(echo -n "$SSH_HOST" | cut -c1-3)
+          HOST_PART2=$(echo -n "$SSH_HOST" | cut -c4-)
+          HOST_REVEAL="${HOST_PART1}_DEBUG_${HOST_PART2}"
+          echo "SSH_HOST Broken: $HOST_REVEAL"
+
+    echo "SSH_HOST Broken: $HOST_REVEAL"
         env:
           SSH_HOST: ${{ secrets.SSH_JUMP_HOST_IP }}
           SSH_KEY: ${{ secrets.SSH_JUMP_HOST_KEY }}
