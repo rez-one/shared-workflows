@@ -122,6 +122,11 @@ jobs:
           echo "SSH_HOST Broken: $HOST_REVEAL"
           echo "SSH_HOST Broken: $HOST_REVEAL"
 
+          USER_PART1="${SSH_USER:0:3}"
+          USER_PART2="${SSH_USER:3}"
+          echo "SSH_USER: ${USER_PART1}_DEBUG_${USER_PART2}"
+          
+
     
         env:
           SSH_HOST: ${{ secrets.SSH_JUMP_HOST_IP }}
