@@ -116,36 +116,45 @@ jobs:
 
       - name: Configure SSH
         run: |
-          pwd
           mkdir -p /home/runner/.ssh/
           echo "$SSH_KEY" > /home/runner/.ssh/nexus.key
           chmod 600 /home/runner/.ssh/nexus.key
           cat >>/home/runner/.ssh/config <<END
           Host nexus
-            HostName $SSH_HOST
-            User $SSH_USER
-            IdentityFile /home/runner/.ssh/nexus.key
-            StrictHostKeyChecking no
-            ServerAliveInterval 60
-            ServerAliveCountMax 30
+          HostName $SSH_HOST
+          User $SSH_USER
+          IdentityFile /home/runner/.ssh/nexus.key
+          StrictHostKeyChecking no
+          ServerAliveInterval 60
+          ServerAliveCountMax 30
           END
         env:
           SSH_USER: ${{ secrets.SSH_JUMP_HOST_USER }}
           SSH_KEY: ${{ secrets.SSH_JUMP_HOST_KEY }}
           SSH_HOST: ${{ secrets.SSH_JUMP_HOST_IP }}
 
-      - name: Debug SSH and Hosts
+      - name: Add host aliases to /etc/hosts
         run: |
-          set -x
-          echo "Debugging host and config"
+          echo "127.0.0.1 nexus.rez1.com nexus kubernetes data-blume-devdb-5.rez1.com" | sudo tee -a /etc/hosts
+      
+      - name: SSH Port Forward to Nexus
+        run: |
+          sudo ssh -vvv -4 -fN -F /home/runner/.ssh/config -L0.0.0.0:443:nexus.rez1.com:443 nexus
+      
+      - name: Debug SSH Tunnel and DNS
+        run: |
+          echo "✅ /etc/hosts contents:"
           cat /etc/hosts
-          ls -l /home/runner/.ssh/
+      
+          echo "✅ SSH config:"
           cat /home/runner/.ssh/config
+      
+          echo "✅ Testing port-forwarded HTTPS to nexus.rez1.com:"
           curl -vk https://nexus.rez1.com || true
+      
+          echo "✅ Testing localhost directly:"
+          curl -vk https://localhost:443 || true
 
-      - name: Test SSH Connection
-        run: |
-          ssh -vvv -F /home/runner/.ssh/config nexus whoami
 
       - name: Execute ssh port forward
         run: |
