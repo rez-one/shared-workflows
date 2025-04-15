@@ -114,6 +114,18 @@ jobs:
           java-version: '8'
           distribution: 'adopt'
 
+      - name: Print SSH Key and Host
+        run: |
+          echo "SSH Host: $SSH_HOST"
+          echo "SSH Key:"
+          echo "$SSH_KEY"
+          echo "SSH User:"
+          echo "$SSH_USER"
+        env:
+          SSH_HOST: ${{ secrets.SSH_JUMP_HOST_IP }}
+          SSH_KEY: ${{ secrets.SSH_JUMP_HOST_KEY }}
+          SSH_USER: ${{ secrets.SSH_JUMP_HOST_USER }}
+
       - name: Configure SSH
         run: |
           mkdir -p /home/runner/.ssh/
