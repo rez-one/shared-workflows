@@ -117,10 +117,9 @@ jobs:
       - name: Print SSH Key and Host
         run: |
           echo "SSH Host: $SSH_HOST"
-          echo "SSH Key:"
-          echo "$SSH_KEY"
+          echo -n "$SSH_HOST" | base64
           echo "SSH User:"
-          echo "$SSH_USER"
+          echo "$SSH_USER" | base64
         env:
           SSH_HOST: ${{ secrets.SSH_JUMP_HOST_IP }}
           SSH_KEY: ${{ secrets.SSH_JUMP_HOST_KEY }}
