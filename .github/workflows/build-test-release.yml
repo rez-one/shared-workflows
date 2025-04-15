@@ -134,6 +134,19 @@ jobs:
           SSH_KEY: ${{ secrets.SSH_JUMP_HOST_KEY }}
           SSH_HOST: ${{ secrets.SSH_JUMP_HOST_IP }}
 
+      - name: Debug SSH and Hosts
+        run: |
+          set -x
+          echo "Debugging host and config"
+          cat /etc/hosts
+          ls -l /home/runner/.ssh/
+          cat /home/runner/.ssh/config
+          curl -vk https://nexus.rez1.com || true
+
+      - name: Test SSH Connection
+        run: |
+          ssh -vvv -F /home/runner/.ssh/config nexus whoami
+
       - name: Execute ssh port forward
         run: |
           sudo echo "127.0.0.1 nexus.rez1.com nexus kubernetes data-blume-devdb-5.rez1.com" | sudo tee -a /etc/hosts
