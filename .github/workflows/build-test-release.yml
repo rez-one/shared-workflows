@@ -210,7 +210,11 @@ jobs:
       - name: TDD Validation
         if: steps.gradle_build.outcome == 'success'
         continue-on-error: true
-        run: ./gradlew :tddValidation -PbranchName=${{ steps.extract_git_branch_info.outputs.branch_name }} -PbaseRef=${{ github.base_ref }}
+        env:
+          GITHUB_APP_ID: ${{ secrets.GITHUB_APP_ID }}
+          GITHUB_APP_PRIVATE_KEY : ${{ secrets.GITHUB_APP_PRIVATE_KEY }}
+          GITHUB_APP_INSTALL_ID : ${{ secrets.GITHUB_APP_INSTALL_ID }}
+        run: ./gradlew :tddValidation -PbranchName=${{ steps.extract_git_branch_info.outputs.branch_name }} -PbaseRef=${{ github.base_ref }} -PgithubAppId=$GITHUB_APP_ID -PgithubPrivateKey=$GITHUB_APP_PRIVATE_KEY -PgithubInstallId=$GITHUB_APP_INSTALL_ID
 
       - name: Should Publish JARs
         continue-on-error: true
