@@ -16,6 +16,12 @@ on:
         required: false
       JIRA_API_TOKEN:
         required: true
+      CORE_APP_ID:
+        required: true
+      CORE_APP_PRIVATE_KEY:
+        required: true
+      CORE_APP_INSTALL_ID:
+        required: true
     inputs:
       branchesToPublishArtifacts:
         description: 'Branches To Publish Artifacts'
@@ -41,6 +47,9 @@ jobs:
       ORG_GRADLE_PROJECT_nexusUsername: ${{ secrets.NEXUS_USERNAME }}
       ORG_GRADLE_PROJECT_nexusPassword: ${{ secrets.NEXUS_PASSWORD }}
       CI: false
+      CORE_APP_ID: ${{ secrets.CORE_APP_ID }}
+      CORE_APP_PRIVATE_KEY: ${{ secrets.CORE_APP_PRIVATE_KEY }}
+      CORE_APP_INSTALL_ID: ${{ secrets.CORE_APP_INSTALL_ID }}
     steps:
       - name: Remove unnecessary files
         run: |
