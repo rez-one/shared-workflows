@@ -192,6 +192,7 @@ jobs:
           NODE_OPTIONS: "--max_old_space_size=8192"
         with:
           arguments: clean build --refresh-dependencies -PbranchName=${{ steps.extract_git_branch_info.outputs.branch_name }} -PbaseRef=${{ github.base_ref }}
+        id: gradle_build
 
       - name: Publish Test Reports
         continue-on-error: true
@@ -205,6 +206,11 @@ jobs:
         if: false
         with:
           files: "**/build/test-results/test/*.xml"
+
+      - name: TDD Validation
+        if: steps.gradle_build.outcome == 'success'
+        continue-on-error: true
+        run: ./gradlew :tddValidation -PbranchName=${{ steps.extract_git_branch_info.outputs.branch_name }} -PbaseRef=${{ github.base_ref }}
 
       - name: Should Publish JARs
         continue-on-error: true
