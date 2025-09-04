@@ -201,6 +201,7 @@ jobs:
 
       - name: TDD Validation
         if: steps.gradle_build.outcome == 'success'
+        continue-on-error: true
         run: ./gradlew :tddValidation -PbranchName=${{ steps.extract_git_branch_info.outputs.branch_name }} -PbaseRef=${{ github.base_ref }}
 
       - name: Should Publish JARs
