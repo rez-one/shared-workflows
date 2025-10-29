@@ -1,0 +1,284 @@
+name: Build and Test Quality Gate
+on:
+  workflow_call:
+    secrets:
+      SSH_JUMP_HOST_USER:
+        required: true
+      SSH_JUMP_HOST_KEY:
+        required: true
+      SSH_JUMP_HOST_IP:
+        required: true
+      GCR_CREDENTIALS:
+        required: true
+      NEXUS_USERNAME:
+        required: false
+      NEXUS_PASSWORD:
+        required: false
+      JIRA_API_TOKEN:
+        required: true
+    inputs:
+      branchesToPublishArtifacts:
+        description: 'Branches To Publish Artifacts'
+        required: false
+        default: '["dev", "qa", "test", "uat", "main", "master"]'
+        type: string
+      branchesToPublishImages:
+        description: 'Branches To Publish Docker Images to GCR'
+        required: false
+        default: '["dev", "qa", "test", "uat", "main", "master"]'
+        type: string
+      branchesToDeploy:
+        description: 'Branches To Deploy'
+        required: false
+        default: '["dev-env"]'
+        type: string
+permissions: write-all
+jobs:
+  build-and-test:
+    name: Build and Test Quality Gate Job
+    runs-on: ubuntu-latest
+    env:
+      ORG_GRADLE_PROJECT_nexusUsername: ${{ secrets.NEXUS_USERNAME }}
+      ORG_GRADLE_PROJECT_nexusPassword: ${{ secrets.NEXUS_PASSWORD }}
+      CI: false
+    steps:
+      - name: Remove unnecessary files
+        run: |
+          sudo rm -rf /usr/share/dotnet
+      - name: Extract branch name and commit hash
+        shell: bash
+        run: |
+          if [[ ${{ github.event_name }} == 'pull_request' ]]; then
+            echo "##[set-output name=short_sha;]$(echo ${{ github.event.pull_request.head.sha }} | cut -c1-8)"
+            echo "##[set-output name=branch_name;]$(echo ${GITHUB_HEAD_REF#refs/heads/})"
+          else
+            echo "##[set-output name=short_sha;]$(echo ${{ github.sha }} | cut -c1-8)"
+            echo "##[set-output name=branch_name;]$(echo ${GITHUB_REF#refs/heads/})"
+          fi          
+        id: extract_git_branch_info
+
+      - run: echo "🎉 The job was automatically triggered for the commit ${{ steps.extract_git_branch_info.outputs.short_sha }} in branch ${{ steps.extract_git_branch_info.outputs.branch_name }} by a ${{ github.event_name }} event."
+      
+      - name: Dump GitHub context
+        id: github_context_step
+        run: echo $JSON
+        env:
+          JSON: ${{ toJSON(github) }}
+          
+      - name: Check out repository code
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+# JIRA ID Validation for PRs against releases branch ---- start
+#      - name : Get Jira ID from Title of PR
+#        if: github.event_name == 'pull_request' && startsWith( github.base_ref, 'releases')
+#        run: |
+#            echo Extracting Jira Id from PR Title: '${{ github.event.pull_request.title }}'
+#            echo IMPORTANT!!! PR Titile should have Jira Id enclosed in square brackets like [AR-419] and not have any special characters in it
+#            echo '${{ github.event.pull_request.title }}' | sed -n 's/.*\[\(.*\)\].*/\1/p'
+#            echo "::set-output name=jira_id::$(echo '${{ github.event.pull_request.title }}' | sed -n 's/.*\[\(.*\)\].*/\1/p')"
+#            echo "::set-output name=release::$(echo ${{ github.base_ref }} | sed -n 's/releases\/\(.*\)/\1/p')"
+#            echo '${{ github.event.pull_request.title }}' | grep -e '\[\(.*\)\]'
+#        id: extract_jira_id 
+#      
+#      - name : Validate Jira ID
+#        if: github.event_name == 'pull_request' && startsWith( github.base_ref, 'releases')
+#        env:
+#          JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
+#        run: |
+#          echo 'There should be a valid issue on Jira for the id ${{ steps.extract_jira_id.outputs.jira_id }}'
+#          curl -s --request GET \
+#          --url "https://rezone.atlassian.net/rest/api/2/issue/${{ steps.extract_jira_id.outputs.jira_id }}?fields=summary" \
+#          --header "Authorization: Basic $JIRA_API_TOKEN" \
+#          -w '\nstatus%{http_code}\n' | grep status200
+#        
+#        id: validate_jira_id
+#
+#      - name : Validate if Jira ID belongs to a release
+#        if: 1 == 2 && github.event_name == 'pull_request' && startsWith( github.base_ref, 'releases')
+#        env:
+#          JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
+#        run: |
+#          echo '${{ steps.extract_jira_id.outputs.jira_id }} should belong to the ${{ github.base_ref }}'
+#          curl -s --request GET \
+#          --url "https://rezone.atlassian.net/rest/api/2/issue/${{ steps.extract_jira_id.outputs.jira_id }}?fields=customfield_12803" \
+#          --header "Authorization: Basic $JIRA_API_TOKEN" \
+#          | sed -n 's/.*fields.*{\(.*\)}.*/\1/p' | grep -i '${{ steps.extract_jira_id.outputs.release }}'
+#  
+# JIRA ID Validation for PRs against releases branch - end
+
+      - name: Set up JDK 11
+        uses: actions/setup-java@v2
+        with:
+          java-version: '11'
+          distribution: 'adopt'
+
+      - name: Configure SSH
+        run: |
+          pwd
+          mkdir -p /home/runner/.ssh/
+          echo "$SSH_KEY" > /home/runner/.ssh/nexus.key
+          chmod 600 /home/runner/.ssh/nexus.key
+          cat >>/home/runner/.ssh/config <<END
+          Host nexus
+            HostName $SSH_HOST
+            User $SSH_USER
+            IdentityFile /home/runner/.ssh/nexus.key
+            StrictHostKeyChecking no
+            ServerAliveInterval 60
+            ServerAliveCountMax 30
+          END
+        env:
+          SSH_USER: ${{ secrets.SSH_JUMP_HOST_USER }}
+          SSH_KEY: ${{ secrets.SSH_JUMP_HOST_KEY }}
+          SSH_HOST: ${{ secrets.SSH_JUMP_HOST_IP }}
+
+      - name: Execute ssh port forward
+        run: |
+          sudo echo "127.0.0.1 nexus.rez1.com nexus kubernetes data-blume-devdb-5.rez1.com" | sudo tee -a /etc/hosts
+          sudo ssh -4 -fN -F /home/runner/.ssh/config -L0.0.0.0:443:nexus.rez1.com:443 nexus
+      - name: Configure GCR
+        run: |
+          mkdir -p $HOME/.gcr/
+          echo "$GCR_CREDENTIALS" > $HOME/.gcr/gcr_sa_key.json
+          chmod 600 $HOME/.gcr/gcr_sa_key.json
+          cat $HOME/.gcr/gcr_sa_key.json
+        env:
+          GCR_CREDENTIALS: ${{ secrets.GCR_CREDENTIALS }}
+
+      - name: GCP INSTALL
+        uses: google-github-actions/setup-gcloud@v0
+        if: (steps.extract_git_branch_info.outputs.branch_name == 'dev-env')
+
+      - name: DEV Authenticate to Google Cloud
+        uses: google-github-actions/auth@v0
+        if: (steps.extract_git_branch_info.outputs.branch_name == 'dev-env')
+        with:
+          credentials_json: ${{ secrets.DEPLOY_DEV_CREDENTIALS }}
+
+      - name: DEV GKE CREDENTIAL
+        uses: google-github-actions/get-gke-credentials@v0
+        if: (steps.extract_git_branch_info.outputs.branch_name == 'dev-env')
+        with:
+          cluster_name: 'blume-shared-infra-k8s-dev'
+          location: 'us-west1-b'
+
+      - name: DEV Configure KUBECONFIG
+        if: (steps.extract_git_branch_info.outputs.branch_name == 'dev-env')
+        run: |
+          sed -i 's/172.16.0.18/kubernetes:8443/g' $KUBECONFIG
+          sudo ssh -4 -fN -F /home/runner/.ssh/config -L0.0.0.0:8443:172.16.0.18:443 nexus
+
+      - name: SSH port forward for code_analysis db
+        continue-on-error: true
+        run: |
+          sudo ssh -4 -fN -F /home/runner/.ssh/config -L0.0.0.0:7193:data-blume-devdb-5.rez1.com:3306 nexus
+
+      - name: docker compose up
+        run: docker compose up -d
+
+      - name: Build with Gradle
+        uses: gradle/gradle-build-action@v2
+        env:
+          NODE_OPTIONS: "--max_old_space_size=8192"
+        with:
+          arguments: clean build --refresh-dependencies -PbranchName=${{ steps.extract_git_branch_info.outputs.branch_name }} -PbaseRef=${{ github.base_ref }}
+        id: gradle_build
+
+      - name: Publish Test Reports
+        continue-on-error: true
+        uses: EnricoMi/publish-unit-test-result-action@v1
+        if: always()
+        with:
+          files: "**/build/test-results/test/*.xml"
+          
+      - name: Publish Test Reports Off
+        uses: mikepenz/action-junit-report@v3
+        if: false
+        with:
+          files: "**/build/test-results/test/*.xml"
+
+      - name: TDD Validation
+        if: steps.gradle_build.outcome == 'success'
+        run: ./gradlew :tddValidation -PbranchName=${{ steps.extract_git_branch_info.outputs.branch_name }} -PbaseRef=${{ github.base_ref }}
+
+      - name: Should Publish JARs
+        continue-on-error: true
+        run: ./gradlew tasks --all | grep -w "publish"
+        id: publish_jar
+       
+      - name: Publish JAR branches   
+        if: steps.publish_jar.outcome == 'success'
+        run: echo "JAR publishing configured for branches - ${{ inputs.branchesToPublishArtifacts }}"
+        
+      - name: Publish JAR Artifacts
+        uses: gradle/gradle-build-action@v2
+        if: steps.publish_jar.outcome == 'success' && ( contains(fromJSON(inputs.branchesToPublishArtifacts), steps.extract_git_branch_info.outputs.branch_name) || startsWith(steps.extract_git_branch_info.outputs.branch_name, 'releases') || startsWith(github.ref, 'refs/tags/v') )
+        with:
+          arguments: publish  -Pgithubref=${{github.ref}} -PbranchName=${{ steps.extract_git_branch_info.outputs.branch_name }}
+
+      - name: Should Pubish DockerImage
+        continue-on-error: true
+        run: ./gradlew tasks --all | grep -w "publishDockerImage"
+        id: publish_gcr
+
+      - name: Configure Docker Image
+        if: steps.publish_gcr.outcome == 'success' && !startsWith(github.ref, 'refs/tags/RC')
+        id: 'docker-image-config'
+        run: |
+          if [[ ${{ github.event_name }} == 'pull_request' ]]; then
+            echo '::set-output name=image_name::${{ steps.extract_git_branch_info.outputs.branch_name }}-${{ steps.extract_git_branch_info.outputs.short_sha }}-pr'
+          elif [[ ${{ github.event_name }} == 'push' ]]; then
+            echo '::set-output name=image_name::${{ steps.extract_git_branch_info.outputs.branch_name }}-${{ steps.extract_git_branch_info.outputs.short_sha }}'
+          else
+            echo '::set-output name=image_name::${{ steps.extract_git_branch_info.outputs.branch_name }}-${{ steps.extract_git_branch_info.outputs.short_sha }}'
+          fi  
+
+      - name: Release tag
+        id: rc_tag
+        if: steps.publish_gcr.outcome == 'success' && startsWith(github.ref, 'refs/tags/RC')
+        run: |
+          echo "::set-output name=rc_image_tag::$(echo ${{ github.ref }} | sed -n 's/refs\/tags\/\(.*\)/\1/p')"
+
+      - name: Configure RC Docker Image
+        if: steps.publish_gcr.outcome == 'success' && startsWith(github.ref, 'refs/tags/RC')
+        id: docker-rc-image-name
+        run: |
+            echo '::set-output name=image_name::${{ steps.rc_tag.outputs.rc_image_tag }}-${{ steps.extract_git_branch_info.outputs.short_sha }}'
+          
+      - name: Docker Image
+        if: steps.publish_gcr.outcome == 'success'
+        run: echo "The docker image name is ${{ steps.docker-image-config.outputs.image_name }} ${{ steps.docker-rc-image-name.outputs.image_name }} and Image publishing configured for branches - ${{ inputs.branchesToPublishImages }}"
+    
+      - name: Publish Image to GCR
+        uses: gradle/gradle-build-action@v2
+        if:  steps.publish_gcr.outcome == 'success' && ( (contains(fromJSON(inputs.branchesToPublishImages), steps.extract_git_branch_info.outputs.branch_name) || startsWith(steps.extract_git_branch_info.outputs.branch_name, 'releases')) && !startsWith(github.ref, 'refs/tags/RC') )
+        with:
+          arguments: publishDockerImage -PimageName=${{ steps.docker-image-config.outputs.image_name }}
+
+      - name: Publish RC Image to GCR
+        uses: gradle/gradle-build-action@v2
+        if:  steps.publish_gcr.outcome == 'success' && startsWith(github.ref, 'refs/tags/RC')
+        with:
+          arguments: publishDockerImage -PimageName=${{ steps.docker-rc-image-name.outputs.image_name }}
+
+      - name: audit build
+        continue-on-error: true
+        run: |
+          ./gradlew tasks --all | grep -w -m 1 "auditBuild" | xargs ./gradlew -PbranchName=${{ steps.extract_git_branch_info.outputs.branch_name }}
+        id: audit-task
+        
+      - name: List files in the repository
+        run: |
+          ls ${{ github.workspace }}
+      - run: echo "🍏 This job's status is ${{ job.status }}."
+
+      - name: Dev Deploy
+        uses: gradle/gradle-build-action@v2
+        if: (steps.extract_git_branch_info.outputs.branch_name == 'dev-env')
+        with:
+          arguments: helmInstall  -P helm.release.target=dev  -PimageTag="${{ steps.docker-image-config.outputs.image_name }}"
+
+
+      
