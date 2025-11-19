@@ -181,6 +181,7 @@ jobs:
       - name: Build with Gradle
         uses: gradle/gradle-build-action@v2
         env:
+          testProfile: local
           NODE_OPTIONS: "--max_old_space_size=8192"
         with:
           arguments: clean build --refresh-dependencies -PbranchName=${{ steps.extract_git_branch_info.outputs.branch_name }} -PbaseRef=${{ github.base_ref }}
