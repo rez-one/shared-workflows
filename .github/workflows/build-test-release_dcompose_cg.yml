@@ -250,6 +250,14 @@ jobs:
       - name: Docker Image
         if: steps.publish_gcr.outcome == 'success'
         run: echo "The docker image name is ${{ steps.docker-image-config.outputs.image_name }} ${{ steps.docker-rc-image-name.outputs.image_name }} and Image publishing configured for branches - ${{ inputs.branchesToPublishImages }}"
+
+      - name: Clean Node Modules
+        if: steps.publish_gcr.outcome == 'success' && ( (contains(fromJSON(inputs.branchesToPublishImages), steps.extract_git_branch_info.outputs.branch_name) || startsWith(steps.extract_git_branch_info.outputs.branch_name, 'releases')) && !startsWith(github.ref, 'refs/tags/RC') )
+        run: |
+          echo "🧹 Cleaning Node modules to free disk space..."
+          rm -rf src/main/ui-source/*/node_modules
+          df -h
+        shell: bash
     
       - name: Publish Image to GCR
         uses: gradle/gradle-build-action@v2
