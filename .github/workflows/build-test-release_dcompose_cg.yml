@@ -181,10 +181,12 @@ jobs:
       - name: Build with Gradle
         uses: gradle/gradle-build-action@v2
         env:
-          NODE_OPTIONS: "--max_old_space_size=8192"
+          NODE_OPTIONS: "--max-old-space-size=8192"
+          GRADLE_OPTS: "-Xmx4g -XX:MaxMetaspaceSize=1g"
         with:
-          arguments: clean build --refresh-dependencies -PbranchName=${{ steps.extract_git_branch_info.outputs.branch_name }} -PbaseRef=${{ github.base_ref }} -PtestProfile=local
+          arguments: clean build --no-daemon --no-parallel --max-workers=2 --refresh-dependencies -PbranchName=${{ steps.extract_git_branch_info.outputs.branch_name }} -PbaseRef=${{ github.base_ref }} -PtestProfile=local
         id: gradle_build
+
 
       - name: Publish Test Reports
         continue-on-error: true
