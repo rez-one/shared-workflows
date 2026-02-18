@@ -136,7 +136,7 @@ jobs:
 
       - name: Execute ssh port forward
         run: |
-          sudo echo "127.0.0.1 nexus.rez1.com nexus kubernetes data-blume-devdb-5.rez1.com" | sudo tee -a /etc/hosts
+          sudo echo "127.0.0.1 nexus.rez1.com nexus kubernetes data-blume-devdb-5.rez1.com dev-apps.blumesolutions.com" | sudo tee -a /etc/hosts
           sudo ssh -4 -fN -F /home/runner/.ssh/config -L0.0.0.0:443:nexus.rez1.com:443 nexus
       - name: SSH port forward for data-ingestion ingress
         run: |
