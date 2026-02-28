@@ -51,10 +51,40 @@ jobs:
           if [[ ${{ github.event_name }} == 'pull_request' ]]; then
             echo "##[set-output name=short_sha;]$(echo ${{ github.event.pull_request.head.sha }} | cut -c1-8)"
             echo "##[set-output name=branch_name;]$(echo ${GITHUB_HEAD_REF#refs/heads/})"
+            BRANCH_NAME="${GITHUB_HEAD_REF#refs/heads/}"
           else
             echo "##[set-output name=short_sha;]$(echo ${{ github.sha }} | cut -c1-8)"
             echo "##[set-output name=branch_name;]$(echo ${GITHUB_REF#refs/heads/})"
-          fi          
+            BRANCH_NAME="${GITHUB_REF#refs/heads/}"
+          fi
+
+          # Check if branch matches any wildcard pattern in branchesToPublishArtifacts
+          ARTIFACT_MATCH="false"
+          for pattern in $(echo '${{ inputs.branchesToPublishArtifacts }}' | jq -r '.[]'); do
+            if [[ "$pattern" == *"**"* ]]; then
+              prefix="${pattern%%\*\*}"
+              prefix="${prefix%/}"
+              if [[ "$BRANCH_NAME" == "$prefix"* ]]; then
+                ARTIFACT_MATCH="true"
+                break
+              fi
+            fi
+          done
+          echo "##[set-output name=artifact_pattern_match;]${ARTIFACT_MATCH}"
+
+          # Check if branch matches any wildcard pattern in branchesToPublishImages
+          IMAGE_MATCH="false"
+          for pattern in $(echo '${{ inputs.branchesToPublishImages }}' | jq -r '.[]'); do
+            if [[ "$pattern" == *"**"* ]]; then
+              prefix="${pattern%%\*\*}"
+              prefix="${prefix%/}"
+              if [[ "$BRANCH_NAME" == "$prefix"* ]]; then
+                IMAGE_MATCH="true"
+                break
+              fi
+            fi
+          done
+          echo "##[set-output name=image_pattern_match;]${IMAGE_MATCH}"
         id: extract_git_branch_info
 
       - run: echo "🎉 The job was automatically triggered for the commit ${{ steps.extract_git_branch_info.outputs.short_sha }} in branch ${{ steps.extract_git_branch_info.outputs.branch_name }} by a ${{ github.event_name }} event."
@@ -214,7 +244,7 @@ jobs:
         
       - name: Publish JAR Artifacts
         uses: gradle/gradle-build-action@v2
-        if: steps.publish_jar.outcome == 'success' && ( contains(fromJSON(inputs.branchesToPublishArtifacts), steps.extract_git_branch_info.outputs.branch_name) || startsWith(steps.extract_git_branch_info.outputs.branch_name, 'releases') || startsWith(github.ref, 'refs/tags/v') )
+        if: steps.publish_jar.outcome == 'success' && ( contains(fromJSON(inputs.branchesToPublishArtifacts), steps.extract_git_branch_info.outputs.branch_name) || steps.extract_git_branch_info.outputs.artifact_pattern_match == 'true' || startsWith(steps.extract_git_branch_info.outputs.branch_name, 'releases') || startsWith(github.ref, 'refs/tags/v') )
         with:
           arguments: publish  -Pgithubref=${{github.ref}} -PbranchName=${{ steps.extract_git_branch_info.outputs.branch_name }}
 
@@ -253,7 +283,7 @@ jobs:
     
       - name: Publish Image to GCR
         uses: gradle/gradle-build-action@v2
-        if:  steps.publish_gcr.outcome == 'success' && ( (contains(fromJSON(inputs.branchesToPublishImages), steps.extract_git_branch_info.outputs.branch_name) || startsWith(steps.extract_git_branch_info.outputs.branch_name, 'releases') || startsWith(steps.extract_git_branch_info.outputs.branch_name, 'WI')) && !startsWith(github.ref, 'refs/tags/RC') )
+        if:  steps.publish_gcr.outcome == 'success' && ( (contains(fromJSON(inputs.branchesToPublishImages), steps.extract_git_branch_info.outputs.branch_name) || steps.extract_git_branch_info.outputs.image_pattern_match == 'true' || startsWith(steps.extract_git_branch_info.outputs.branch_name, 'releases') || startsWith(steps.extract_git_branch_info.outputs.branch_name, 'WI')) && !startsWith(github.ref, 'refs/tags/RC') )
         with:
           arguments: publishDockerImage -PimageName=${{ steps.docker-image-config.outputs.image_name }}
 
