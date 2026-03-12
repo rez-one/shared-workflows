@@ -16,6 +16,10 @@ on:
         required: false
       JIRA_API_TOKEN:
         required: true
+      AIRFLOW_SA_KEY:
+        required: true
+      GCR_SA_KEY:
+        required: true
     inputs:
       branchesToPublishArtifacts:
         description: 'Branches To Publish Artifacts'
@@ -41,6 +45,8 @@ jobs:
       ORG_GRADLE_PROJECT_nexusUsername: ${{ secrets.NEXUS_USERNAME }}
       ORG_GRADLE_PROJECT_nexusPassword: ${{ secrets.NEXUS_PASSWORD }}
       CI: false
+      AIRFLOW_SA_KEY: ${{ secrets.AIRFLOW_SA_KEY }}
+      GCR_SA_KEY: ${{ secrets.GCR_SA_KEY }}
     steps:
       - name: Remove unnecessary files
         run: |
