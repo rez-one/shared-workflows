@@ -402,19 +402,19 @@ jobs:
         if: steps.publish_ocp.outcome == 'success'
         run: echo "The OCP docker image name is ${{ steps.ocp-docker-image-config.outputs.image_name }} ${{ steps.ocp-docker-rc-image-name.outputs.image_name }} and Image publishing configured for branches - ${{ inputs.branchesToPublishImagesToOCR }}"
 
-      # Currently: tagOCPImage (builds + tags only, no push)
-      # TODO: Replace with publishOCPImage once OCP registry token is provisioned
+      # Runs build + tag + login in a single Gradle invocation (no push yet).
+      # TODO: Replace with publishOCPImage once OCP registry push is verified
       - name: Publish Image to OCP
         uses: gradle/gradle-build-action@v2
         if:  steps.publish_ocp.outcome == 'success' && ( (contains(fromJSON(inputs.branchesToPublishImagesToOCR), steps.extract_git_branch_info.outputs.branch_name) || steps.extract_git_branch_info.outputs.ocr_pattern_match == 'true' || startsWith(steps.extract_git_branch_info.outputs.branch_name, 'releases') || startsWith(steps.extract_git_branch_info.outputs.branch_name, 'WI')) && !startsWith(github.ref, 'refs/tags/RC') )
         with:
-          arguments: tagOCPImage -PimageName=${{ steps.ocp-docker-image-config.outputs.image_name }}
+          arguments: tagOCPImage ocpLogin -PimageName=${{ steps.ocp-docker-image-config.outputs.image_name }} -PocpToken=${{ secrets.OCP_REGISTRY_TOKEN }}
 
       - name: Publish RC Image to OCP
         uses: gradle/gradle-build-action@v2
         if:  steps.publish_ocp.outcome == 'success' && startsWith(github.ref, 'refs/tags/RC')
         with:
-          arguments: tagOCPImage -PimageName=${{ steps.ocp-docker-rc-image-name.outputs.image_name }}
+          arguments: tagOCPImage ocpLogin -PimageName=${{ steps.ocp-docker-rc-image-name.outputs.image_name }} -PocpToken=${{ secrets.OCP_REGISTRY_TOKEN }}
 
 
       - name: audit build
