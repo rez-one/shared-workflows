@@ -239,9 +239,15 @@ jobs:
       - name: Clone vendored dependency repos
         if: inputs.createAppToken == true && inputs.reposToClone != '[]' && inputs.reposToClone != ''
         run: |
-          for repo in $(echo '${{ inputs.reposToClone }}' | jq -r '.[]'); do
+          for repo_branch in $(echo '${{ inputs.reposToClone }}' | jq -r '.[]'); do
+            repo=$(echo $repo_branch | cut -d@ -f1)
+            branch=$(echo $repo_branch | cut -d@ -f2)
             name=$(basename $repo)
-            git clone https://x-access-token:${{ steps.app-token.outputs.token }}@github.com/${repo}.git vendor/${name}
+            if [ "$branch" != "$repo_branch" ]; then
+              git clone -b $branch https://x-access-token:${{ steps.app-token.outputs.token }}@github.com/${repo}.git vendor/${name}
+            else
+              git clone https://x-access-token:${{ steps.app-token.outputs.token }}@github.com/${repo}.git vendor/${name}
+            fi
           done
 
       - name: docker compose up
