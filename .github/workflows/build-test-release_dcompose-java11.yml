@@ -16,6 +16,10 @@ on:
         required: false
       JIRA_API_TOKEN:
         required: true
+      CORE_APP_ID:
+        required: false
+      CORE_APP_PRIVATE_KEY:
+        required: false
     inputs:
       branchesToPublishArtifacts:
         description: 'Branches To Publish Artifacts'
@@ -31,6 +35,16 @@ on:
         description: 'Branches To Deploy'
         required: false
         default: '["dev-env"]'
+        type: string
+      createAppToken:
+        description: 'Whether to generate a GitHub App token for cross-repo operations'
+        required: false
+        default: false
+        type: boolean
+      reposToClone:
+        description: 'JSON array of repos to clone as vendor deps before Docker build'
+        required: false
+        default: '[]'
         type: string
 permissions: write-all
 jobs:
@@ -204,6 +218,29 @@ jobs:
         continue-on-error: true
         run: |
           sudo ssh -4 -fN -F /home/runner/.ssh/config -L0.0.0.0:7193:data-blume-devdb-5.rez1.com:3306 nexus
+
+      - name: Generate GitHub App token
+        id: app-token
+        if: inputs.createAppToken == true
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ secrets.CORE_APP_ID }}
+          private-key: ${{ secrets.CORE_APP_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+
+      - name: Clone vendored dependency repos
+        if: inputs.createAppToken == true && inputs.reposToClone != '[]' && inputs.reposToClone != ''
+        run: |
+          for repo_branch in $(echo '${{ inputs.reposToClone }}' | jq -r '.[]'); do
+            repo=$(echo $repo_branch | cut -d@ -f1)
+            branch=$(echo $repo_branch | cut -d@ -f2)
+            name=$(basename $repo)
+            if [ "$branch" != "$repo_branch" ]; then
+              git clone -b $branch https://x-access-token:${{ steps.app-token.outputs.token }}@github.com/${repo}.git vendor/${name}
+            else
+              git clone https://x-access-token:${{ steps.app-token.outputs.token }}@github.com/${repo}.git vendor/${name}
+            fi
+          done
 
       - name: docker compose up
         run: docker compose up -d
