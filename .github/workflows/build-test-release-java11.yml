@@ -243,6 +243,7 @@ jobs:
             repo=$(echo $repo_branch | cut -d@ -f1)
             branch=$(echo $repo_branch | cut -d@ -f2)
             name=$(basename $repo)
+            rm -rf ${name}
             if [ "$branch" != "$repo_branch" ]; then
               git clone -b $branch https://x-access-token:${{ steps.app-token.outputs.token }}@github.com/${repo}.git ${name}
             else
