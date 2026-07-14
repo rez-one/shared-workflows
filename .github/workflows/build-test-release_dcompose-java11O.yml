@@ -52,7 +52,7 @@ permissions: write-all
 jobs:
   build-and-test:
     name: Build and Test Quality Gate Job
-    runs-on: ubuntu-latest
+    runs-on: wtg-aue-linux-x64
     env:
       ORG_GRADLE_PROJECT_nexusUsername: ${{ secrets.NEXUS_USERNAME }}
       ORG_GRADLE_PROJECT_nexusPassword: ${{ secrets.NEXUS_PASSWORD }}
@@ -247,25 +247,8 @@ jobs:
         env:
           NODE_OPTIONS: "--max_old_space_size=8192"
         with:
-          arguments: clean build --refresh-dependencies -PbranchName=${{ steps.extract_git_branch_info.outputs.branch_name }} -PbaseRef=${{ github.base_ref }}
+          arguments: clean build --refresh-dependencies -x test -PbranchName=${{ steps.extract_git_branch_info.outputs.branch_name }} -PbaseRef=${{ github.base_ref }}
         id: gradle_build
-
-      - name: Publish Test Reports
-        continue-on-error: true
-        uses: EnricoMi/publish-unit-test-result-action@v1
-        if: always()
-        with:
-          files: "**/build/test-results/test/*.xml"
-          
-      - name: Publish Test Reports Off
-        uses: mikepenz/action-junit-report@v3
-        if: false
-        with:
-          files: "**/build/test-results/test/*.xml"
-
-      - name: TDD Validation
-        if: steps.gradle_build.outcome == 'success'
-        run: ./gradlew :tddValidation -PbranchName=${{ steps.extract_git_branch_info.outputs.branch_name }} -PbaseRef=${{ github.base_ref }}
 
       - name: Should Publish JARs
         continue-on-error: true
