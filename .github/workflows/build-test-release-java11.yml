@@ -372,13 +372,13 @@ jobs:
         uses: gradle/gradle-build-action@v2
         if:  steps.publish_ocp.outcome == 'success' && ( (contains(fromJSON(inputs.branchesToPublishImagesToOCR), steps.extract_git_branch_info.outputs.branch_name) || steps.extract_git_branch_info.outputs.ocr_pattern_match == 'true' || startsWith(steps.extract_git_branch_info.outputs.branch_name, 'releases') || startsWith(steps.extract_git_branch_info.outputs.branch_name, 'WI')) && !startsWith(github.ref, 'refs/tags/RC') )
         with:
-          arguments: publishOCPImage -PimageName=${{ steps.ocp-docker-image-config.outputs.image_name }} -PocpToken=${{ secrets.OCP_REGISTRY_TOKEN }}
+          arguments: publishOCPProdImage -PimageName=${{ steps.ocp-docker-image-config.outputs.image_name }} -PocpToken=${{ secrets.OCP_REGISTRY_TOKEN }}
 
       - name: Publish RC Image to OCP
         uses: gradle/gradle-build-action@v2
         if:  steps.publish_ocp.outcome == 'success' && startsWith(github.ref, 'refs/tags/RC')
         with:
-          arguments: publishOCPImage -PimageName=${{ steps.ocp-docker-rc-image-name.outputs.image_name }} -PocpToken=${{ secrets.OCP_REGISTRY_TOKEN }}
+          arguments: publishOCPProdImage -PimageName=${{ steps.ocp-docker-rc-image-name.outputs.image_name }} -PocpToken=${{ secrets.OCP_REGISTRY_TOKEN }}
 
 
       - name: audit build
