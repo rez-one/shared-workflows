@@ -10,6 +10,8 @@ on:
         required: true
       GCR_CREDENTIALS:
         required: true
+      OCP_REGISTRY_TOKEN:
+        required: false
       NEXUS_USERNAME:
         required: false
       NEXUS_PASSWORD:
@@ -31,10 +33,10 @@ on:
         required: false
         default: '["dev", "qa", "test", "uat", "main", "master"]'
         type: string
-      branchesToDeploy:
-        description: 'Branches To Deploy'
+      branchesToPublishImagesToOCR:
+        description: 'Branches To Publish Docker Images to OCR'
         required: false
-        default: '["dev-env"]'
+        default: '["dev", "qa", "test", "uat", "main", "master"]'
         type: string
       createAppToken:
         description: 'Whether to generate a GitHub App token for cross-repo operations'
@@ -50,7 +52,7 @@ permissions: write-all
 jobs:
   build-and-test:
     name: Build and Test Quality Gate Job
-    runs-on: ubuntu-latest
+    runs-on: wtg-aue-linux-x64
     env:
       ORG_GRADLE_PROJECT_nexusUsername: ${{ secrets.NEXUS_USERNAME }}
       ORG_GRADLE_PROJECT_nexusPassword: ${{ secrets.NEXUS_PASSWORD }}
@@ -99,6 +101,20 @@ jobs:
             fi
           done
           echo "##[set-output name=image_pattern_match;]${IMAGE_MATCH}"
+
+          # Check if branch matches any wildcard pattern in branchesToPublishImagesToOCR
+          OCR_MATCH="false"
+          for pattern in $(echo '${{ inputs.branchesToPublishImagesToOCR }}' | jq -r '.[]'); do
+            if [[ "$pattern" == *"**"* ]]; then
+              prefix="${pattern%%\*\*}"
+              prefix="${prefix%/}"
+              if [[ "$BRANCH_NAME" == "$prefix"* ]]; then
+                OCR_MATCH="true"
+                break
+              fi
+            fi
+          done
+          echo "##[set-output name=ocr_pattern_match;]${OCR_MATCH}"
         id: extract_git_branch_info
 
       - run: echo "🎉 The job was automatically triggered for the commit ${{ steps.extract_git_branch_info.outputs.short_sha }} in branch ${{ steps.extract_git_branch_info.outputs.branch_name }} by a ${{ github.event_name }} event."
@@ -191,33 +207,13 @@ jobs:
         env:
           GCR_CREDENTIALS: ${{ secrets.GCR_CREDENTIALS }}
 
-      - name: GCP INSTALL
-        uses: google-github-actions/setup-gcloud@v0
-        if: (steps.extract_git_branch_info.outputs.branch_name == 'dev-env')
-
-      - name: DEV Authenticate to Google Cloud
-        uses: google-github-actions/auth@v0
-        if: (steps.extract_git_branch_info.outputs.branch_name == 'dev-env')
-        with:
-          credentials_json: ${{ secrets.DEPLOY_DEV_CREDENTIALS }}
-
-      - name: DEV GKE CREDENTIAL
-        uses: google-github-actions/get-gke-credentials@v0
-        if: (steps.extract_git_branch_info.outputs.branch_name == 'dev-env')
-        with:
-          cluster_name: 'blume-shared-infra-k8s-dev'
-          location: 'us-west1-b'
-
-      - name: DEV Configure KUBECONFIG
-        if: (steps.extract_git_branch_info.outputs.branch_name == 'dev-env')
-        run: |
-          sed -i 's/172.16.0.18/kubernetes:8443/g' $KUBECONFIG
-          sudo ssh -4 -fN -F /home/runner/.ssh/config -L0.0.0.0:8443:172.16.0.18:443 nexus
-
       - name: SSH port forward for code_analysis db
         continue-on-error: true
         run: |
           sudo ssh -4 -fN -F /home/runner/.ssh/config -L0.0.0.0:7193:data-blume-devdb-5.rez1.com:3306 nexus
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
 
       - name: Generate GitHub App token
         id: app-token
@@ -331,6 +327,58 @@ jobs:
         with:
           arguments: publishDockerImage -PimageName=${{ steps.docker-rc-image-name.outputs.image_name }}
 
+      # ====================================================================
+      # OCP (OpenShift Container Platform) Image Publishing
+      # Mirrors the GCR flow above — single publishOCPImage command handles
+      # build, tag, login, and push. No docker-logout needed after GCR push
+      # because each plugin uses its own per-task registryCredentials.
+      # ====================================================================
+
+      - name: Should Publish OCP DockerImage
+        continue-on-error: true
+        run: ./gradlew tasks --all | grep -w "publishOCPImage"
+        id: publish_ocp
+
+      - name: Configure OCP Docker Image
+        if: steps.publish_ocp.outcome == 'success' && !startsWith(github.ref, 'refs/tags/RC')
+        id: ocp-docker-image-config
+        run: |
+          if [[ ${{ github.event_name }} == 'pull_request' ]]; then
+            echo '::set-output name=image_name::${{ steps.extract_git_branch_info.outputs.branch_name }}-${{ steps.extract_git_branch_info.outputs.short_sha }}-pr'
+          elif [[ ${{ github.event_name }} == 'push' ]]; then
+            echo '::set-output name=image_name::${{ steps.extract_git_branch_info.outputs.branch_name }}-${{ steps.extract_git_branch_info.outputs.short_sha }}'
+          else
+            echo '::set-output name=image_name::${{ steps.extract_git_branch_info.outputs.branch_name }}-${{ steps.extract_git_branch_info.outputs.short_sha }}'
+          fi
+
+      - name: OCP Release Tag
+        id: ocp_rc_tag
+        if: steps.publish_ocp.outcome == 'success' && startsWith(github.ref, 'refs/tags/RC')
+        run: |
+          echo "::set-output name=rc_image_tag::$(echo ${{ github.ref }} | sed -n 's/refs\/tags\/\(.*\)/\1/p')"
+
+      - name: Configure RC OCP Docker Image
+        if: steps.publish_ocp.outcome == 'success' && startsWith(github.ref, 'refs/tags/RC')
+        id: ocp-docker-rc-image-name
+        run: |
+          echo '::set-output name=image_name::${{ steps.ocp_rc_tag.outputs.rc_image_tag }}-${{ steps.extract_git_branch_info.outputs.short_sha }}'
+
+      - name: OCP Docker Image
+        if: steps.publish_ocp.outcome == 'success'
+        run: echo "The OCP docker image name is ${{ steps.ocp-docker-image-config.outputs.image_name }} ${{ steps.ocp-docker-rc-image-name.outputs.image_name }} and Image publishing configured for branches - ${{ inputs.branchesToPublishImagesToOCR }}"
+
+      - name: Publish Image to OCP
+        uses: gradle/gradle-build-action@v2
+        if:  steps.publish_ocp.outcome == 'success' && ( (contains(fromJSON(inputs.branchesToPublishImagesToOCR), steps.extract_git_branch_info.outputs.branch_name) || steps.extract_git_branch_info.outputs.ocr_pattern_match == 'true' || startsWith(steps.extract_git_branch_info.outputs.branch_name, 'releases') || startsWith(steps.extract_git_branch_info.outputs.branch_name, 'WI')) && !startsWith(github.ref, 'refs/tags/RC') )
+        with:
+          arguments: publishOCPProdImage -PimageName=${{ steps.ocp-docker-image-config.outputs.image_name }} -PocpToken=${{ secrets.OCP_REGISTRY_TOKEN }}
+
+      - name: Publish RC Image to OCP
+        uses: gradle/gradle-build-action@v2
+        if:  steps.publish_ocp.outcome == 'success' && startsWith(github.ref, 'refs/tags/RC')
+        with:
+          arguments: publishOCPProdImage -PimageName=${{ steps.ocp-docker-rc-image-name.outputs.image_name }} -PocpToken=${{ secrets.OCP_REGISTRY_TOKEN }}
+
       - name: audit build
         continue-on-error: true
         run: |
@@ -341,12 +389,6 @@ jobs:
         run: |
           ls ${{ github.workspace }}
       - run: echo "🍏 This job's status is ${{ job.status }}."
-
-      - name: Dev Deploy
-        uses: gradle/gradle-build-action@v2
-        if: (steps.extract_git_branch_info.outputs.branch_name == 'dev-env')
-        with:
-          arguments: helmInstall  -P helm.release.target=dev  -PimageTag="${{ steps.docker-image-config.outputs.image_name }}"
 
 
       
