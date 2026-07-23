@@ -1,0 +1,138 @@
+name: Pull from GCR and Push to OCP
+
+on:
+  # Called from other workflows (e.g. Build and Test Quality Gate)
+  workflow_call:
+    inputs:
+      gcr_image_ref:
+        description: 'Full GCR image ref e.g. us.gcr.io/blume-shared-container-images/my-app/my-app-app:RC-2026.7-1-abc123'
+        required: true
+        type: string
+    secrets:
+      GCR_CREDENTIALS:
+        required: true
+      OCP_REGISTRY_TOKEN:
+        required: true
+
+  # Manual trigger for testing
+  workflow_dispatch:
+    inputs:
+      gcr_image_ref:
+        description: 'Full GCR image ref e.g. us.gcr.io/blume-shared-container-images/my-app/my-app-app:RC-2026.7-1-abc123'
+        required: true
+        type: string
+
+permissions: write-all
+
+jobs:
+  gcr-to-ocp:
+    name: Pull GCR → Push OCP
+    runs-on: wtg-aue-linux-x64
+
+    env:
+      GCR_HOST:      "us.gcr.io"
+      GCR_PROJECT:   "blume-shared-container-images"
+      OCP_HOST:      "registry-au.ocp.wtg.ws"
+      OCP_NAMESPACE: "blu-blume"
+      GCR_USERNAME:  "_json_key"
+      OCP_USERNAME:  "blu-blume+builder"
+
+    steps:
+      - name: Validate input
+        run: |
+          if [[ -z "${{ inputs.gcr_image_ref }}" ]]; then
+            echo "ERROR: gcr_image_ref input is required"
+            exit 1
+          fi
+          echo "GCR source: ${{ inputs.gcr_image_ref }}"
+
+      - name: Derive OCP image ref from GCR ref
+        id: image-refs
+        run: |
+          GCR_REF="${{ inputs.gcr_image_ref }}"
+          GCR_PREFIX="${GCR_HOST}/${GCR_PROJECT}/"
+
+          # Strip GCR prefix to get image-dir:tag
+          REMAINDER="${GCR_REF#${GCR_PREFIX}}"
+
+          # Split image-dir and tag
+          IMAGE_DIR="${REMAINDER%:*}"
+          TAG="${REMAINDER##*:}"
+
+          OCP_REF="${OCP_HOST}/${OCP_NAMESPACE}/${IMAGE_DIR}:${TAG}"
+
+          echo "image_dir=${IMAGE_DIR}" >> $GITHUB_OUTPUT
+          echo "tag=${TAG}"             >> $GITHUB_OUTPUT
+          echo "gcr_ref=${GCR_REF}"    >> $GITHUB_OUTPUT
+          echo "ocp_ref=${OCP_REF}"    >> $GITHUB_OUTPUT
+
+          echo "======================================"
+          echo " GCR source : ${GCR_REF}"
+          echo " OCP target : ${OCP_REF}"
+          echo " Image dir  : ${IMAGE_DIR}"
+          echo " Tag        : ${TAG}"
+          echo "======================================"
+
+      - name: Configure GCR credentials
+        run: |
+          mkdir -p $HOME/.gcr/
+          echo "$GCR_CREDENTIALS" > $HOME/.gcr/gcr_sa_key.json
+          chmod 600 $HOME/.gcr/gcr_sa_key.json
+        env:
+          GCR_CREDENTIALS: ${{ secrets.GCR_CREDENTIALS }}
+
+      - name: Login to OCP registry
+        run: |
+          echo "$OCP_REGISTRY_TOKEN" | docker login \
+            -u "$OCP_USERNAME" \
+            --password-stdin \
+            "$OCP_HOST"
+        env:
+          OCP_REGISTRY_TOKEN: ${{ secrets.OCP_REGISTRY_TOKEN }}
+
+      - name: Check if image already exists in OCP
+        id: ocp-check
+        run: |
+          OCP_REF="${{ steps.image-refs.outputs.ocp_ref }}"
+          if docker manifest inspect "${OCP_REF}" > /dev/null 2>&1; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+            echo "[INFO] Image already exists in OCP — skipping push: ${OCP_REF}"
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+            echo "[INFO] Image not found in OCP — will push: ${OCP_REF}"
+          fi
+
+      - name: Login to GCR
+        if: steps.ocp-check.outputs.exists == 'false'
+        run: |
+          cat $HOME/.gcr/gcr_sa_key.json | docker login \
+            -u "$GCR_USERNAME" \
+            --password-stdin \
+            "https://${GCR_HOST}"
+
+      - name: Pull image from GCR
+        if: steps.ocp-check.outputs.exists == 'false'
+        run: |
+          docker pull "${{ steps.image-refs.outputs.gcr_ref }}"
+
+      - name: Retag image for OCP
+        if: steps.ocp-check.outputs.exists == 'false'
+        run: |
+          docker tag \
+            "${{ steps.image-refs.outputs.gcr_ref }}" \
+            "${{ steps.image-refs.outputs.ocp_ref }}"
+
+      - name: Push image to OCP
+        if: steps.ocp-check.outputs.exists == 'false'
+        run: |
+          docker push "${{ steps.image-refs.outputs.ocp_ref }}"
+          echo "[DONE] Pushed to OCP: ${{ steps.image-refs.outputs.ocp_ref }}"
+
+      - name: Cleanup local images
+        if: always()
+        run: |
+          docker rmi "${{ steps.image-refs.outputs.gcr_ref }}" || true
+          docker rmi "${{ steps.image-refs.outputs.ocp_ref }}" || true
+          rm -f $HOME/.gcr/gcr_sa_key.json
+
+      - run: echo "🍏 Sync job status is ${{ job.status }}"
