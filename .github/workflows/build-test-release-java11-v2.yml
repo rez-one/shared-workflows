@@ -227,9 +227,14 @@ jobs:
       # cache-read-only defaults to true on non-default branches, so feature branches read
       # the shared cache without competing to write it. cache-write-only is the escape hatch:
       # skip the restore, resolve cold, then repopulate the cache for subsequent runs.
+      # THROWAWAY TEST BRANCH - DO NOT MERGE.
+      # cache-read-only is forced false so a non-default test branch writes the cache and a
+      # second run on it can restore. Without this both runs are cold and measure nothing.
+      # cache-migration carries the real default.
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
         with:
+          cache-read-only: false
           cache-write-only: ${{ inputs.refreshDependencies }}
           validate-wrappers: false
 
