@@ -85,6 +85,11 @@ on:
         required: false
         default: false
         type: boolean
+      validateWrappers:
+        description: 'Fail the build if gradle-wrapper.jar is not a published Gradle release jar. A tampered wrapper executes arbitrary code with the job secrets, and a binary diff is invisible in code review, so leave this on unless a repo legitimately ships a non-standard wrapper.'
+        required: false
+        default: true
+        type: boolean
 permissions: write-all
 jobs:
   build-and-test:
@@ -231,7 +236,7 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
         with:
           cache-write-only: ${{ inputs.refreshDependencies }}
-          validate-wrappers: false
+          validate-wrappers: ${{ inputs.validateWrappers }}
 
       - name: Configure SSH
         run: |
