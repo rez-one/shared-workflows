@@ -22,6 +22,12 @@ on:
         required: false
       CORE_APP_PRIVATE_KEY:
         required: false
+      CORE_APP_INSTALL_ID:
+        required: false
+      SSH_JUMP_HOST_KNOWN_HOSTS:
+        required: false
+      MYSQL_DB_PASSWORD:
+        required: false
     inputs:
       branchesToPublishArtifacts:
         description: 'Branches To Publish Artifacts'
