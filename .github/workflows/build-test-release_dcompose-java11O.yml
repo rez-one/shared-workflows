@@ -300,7 +300,7 @@ jobs:
     
       - name: Publish Image to GCR
         uses: gradle/gradle-build-action@v2
-        if:  steps.publish_gcr.outcome == 'success' && ( (contains(fromJSON(inputs.branchesToPublishImages), steps.extract_git_branch_info.outputs.branch_name) || steps.extract_git_branch_info.outputs.image_pattern_match == 'true' || startsWith(steps.extract_git_branch_info.outputs.branch_name, 'releases') || startsWith(steps.extract_git_branch_info.outputs.branch_name, 'WI')) && !startsWith(github.ref, 'refs/tags/RC') )
+        if:  steps.publish_gcr.outcome == 'success' && ( (contains(fromJSON(inputs.branchesToPublishImages), steps.extract_git_branch_info.outputs.branch_name) || steps.extract_git_branch_info.outputs.image_pattern_match == 'true' || startsWith(steps.extract_git_branch_info.outputs.branch_name, 'releases')) && !startsWith(github.ref, 'refs/tags/RC') )
         with:
           arguments: publishDockerImage -PimageName=${{ steps.docker-image-config.outputs.image_name }}
 
@@ -352,7 +352,7 @@ jobs:
 
       - name: Publish Image to OCP
         uses: gradle/gradle-build-action@v2
-        if:  steps.publish_ocp.outcome == 'success' && ( (contains(fromJSON(inputs.branchesToPublishImagesToOCR), steps.extract_git_branch_info.outputs.branch_name) || steps.extract_git_branch_info.outputs.ocr_pattern_match == 'true' || startsWith(steps.extract_git_branch_info.outputs.branch_name, 'releases') || startsWith(steps.extract_git_branch_info.outputs.branch_name, 'WI')) && !startsWith(github.ref, 'refs/tags/RC') )
+        if:  steps.publish_ocp.outcome == 'success' && ( (contains(fromJSON(inputs.branchesToPublishImagesToOCR), steps.extract_git_branch_info.outputs.branch_name) || steps.extract_git_branch_info.outputs.ocr_pattern_match == 'true' || startsWith(steps.extract_git_branch_info.outputs.branch_name, 'releases')) && !startsWith(github.ref, 'refs/tags/RC') )
         with:
           arguments: publishOCPProdImage -PimageName=${{ steps.ocp-docker-image-config.outputs.image_name }} -PocpToken=${{ secrets.OCP_REGISTRY_TOKEN }}
 
