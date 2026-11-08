@@ -1,8 +1,9 @@
-name: NPM Publish (bump + publish to Nexus)
+name: NPM Publish (to Nexus)
 
 # Publishes a list of project folders to the private Nexus registry, in parallel.
+# It publishes exactly what is committed: versions and lockfiles are never changed here, so bump and commit first.
 # Call it once per phase (internal blume-* dependencies must be published before their consumers).
-# Per project: npm install -> refresh internal deps in the lockfile -> bump version -> npm publish -> verify.
+# Per project: npm ci -> skip if name@version is already in Nexus -> npm publish -> verify.
 # Nexus is private, so each job opens the same SSH tunnel the other shared workflows use.
 # The NPMRC secret holds the full .npmrc content, including auth for the publish registry.
 on:
@@ -22,17 +23,12 @@ on:
         required: true
         type: string
       dry-run:
-        description: 'Run "npm publish --dry-run" (builds and packs, uploads nothing, pushes nothing)'
+        description: 'Run "npm publish --dry-run" (builds and packs, uploads nothing)'
         required: false
         default: true
         type: boolean
-      bump-type:
-        description: 'patch, minor or major; applied to max(local version, Nexus latest)'
-        required: false
-        default: 'patch'
-        type: string
-      refresh-internal-deps:
-        description: 'npm update the internal (repo) dependencies so lockfiles pick up versions published in earlier phases'
+      skip-published:
+        description: 'Skip projects whose name@version already exists in the registry (lets a failed run be re-run)'
         required: false
         default: true
         type: boolean
@@ -49,20 +45,6 @@ on:
         required: false
         default: 10
         type: number
-      push-changes:
-        description: 'Push bumped package.json / package-lock.json to branch-name (ignored on dry-run)'
-        required: false
-        default: true
-        type: boolean
-      branch-name:
-        required: false
-        default: ''
-        type: string
-      phase-label:
-        description: 'Label that keeps artifact names unique when called once per phase'
-        required: false
-        default: 'run'
-        type: string
 
 jobs:
   publish:
@@ -117,59 +99,35 @@ jobs:
           # A committed project .npmrc would override the secret, so drop any from the checkout.
           find . -name .npmrc -not -path '*/node_modules/*' -delete
 
-      - name: npm install
+      - name: npm ci
         working-directory: ${{ matrix.project }}
-        run: npm install --legacy-peer-deps --no-audit --no-fund --prefer-online
+        run: npm ci --legacy-peer-deps --no-audit --no-fund --prefer-online
 
-      - name: Refresh internal dependencies in the lockfile
-        if: ${{ inputs.refresh-internal-deps }}
-        working-directory: ${{ matrix.project }}
-        run: |
-          internal=$(node -e '
-            const fs = require("fs"), path = require("path");
-            const names = new Set();
-            for (const d of fs.readdirSync("..", { withFileTypes: true })) {
-              const p = path.join("..", d.name, "package.json");
-              if (d.isDirectory() && fs.existsSync(p)) names.add(JSON.parse(fs.readFileSync(p, "utf8")).name);
-            }
-            const j = JSON.parse(fs.readFileSync("package.json", "utf8"));
-            const deps = [...Object.keys(j.dependencies || {}), ...Object.keys(j.peerDependencies || {})];
-            console.log([...new Set(deps.filter((d) => names.has(d)))].join(" "));
-          ')
-          if [ -z "$internal" ]; then
-            echo "No internal dependencies to refresh."
-          else
-            echo "npm update $internal"
-            # shellcheck disable=SC2086
-            npm update $internal --legacy-peer-deps --no-audit --no-fund --prefer-online
-          fi
-
-      - name: Bump version
+      - name: Check whether this version is already published
         id: version
         working-directory: ${{ matrix.project }}
         env:
-          BUMP_TYPE: ${{ inputs.bump-type }}
           REGISTRY: ${{ inputs.registry }}
+          SKIP_PUBLISHED: ${{ inputs.skip-published }}
         run: |
           name=$(node -p "require('./package.json').name")
-          local_version=$(node -p "require('./package.json').version")
-          remote=$(npm view "$name" version --registry="$REGISTRY" 2>/dev/null | tail -1 || true)
-          next=$(LOCAL="$local_version" REMOTE="$remote" node -e '
-            const parse = (v) => (/^\d+\.\d+\.\d+$/.test(v || "") ? v.split(".").map(Number) : null);
-            const l = parse(process.env.LOCAL), r = parse(process.env.REMOTE);
-            const gt = (a, b) => a[0] - b[0] || a[1] - b[1] || a[2] - b[2];
-            const base = r && gt(r, l) >= 0 ? r : l;
-            const t = process.env.BUMP_TYPE;
-            const out = t === "major" ? [base[0] + 1, 0, 0] : t === "minor" ? [base[0], base[1] + 1, 0] : [base[0], base[1], base[2] + 1];
-            console.log(out.join("."));
-          ')
-          echo "$name: local $local_version, Nexus ${remote:-none} -> $next"
-          npm version "$next" --no-git-tag-version --allow-same-version
+          version=$(node -p "require('./package.json').version")
           echo "name=$name" >> "$GITHUB_OUTPUT"
-          echo "version=$next" >> "$GITHUB_OUTPUT"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          existing=$(npm view "$name@$version" version --registry="$REGISTRY" --prefer-online 2>/dev/null | tail -1 || true)
+          if [ -n "$existing" ] && [ "$SKIP_PUBLISHED" = "true" ]; then
+            echo "$name@$version is already in the registry; skipping."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          elif [ -n "$existing" ]; then
+            echo "::error::$name@$version already exists in the registry. Bump the version and commit it."
+            exit 1
+          else
+            echo "$name@$version is not published yet."
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: npm publish
-        id: publish
+        if: ${{ steps.version.outputs.skip != 'true' }}
         working-directory: ${{ matrix.project }}
         env:
           REGISTRY: ${{ inputs.registry }}
@@ -180,7 +138,7 @@ jobs:
           npm "${args[@]}"
 
       - name: Verify published version
-        if: ${{ !inputs.dry-run }}
+        if: ${{ !inputs.dry-run && steps.version.outputs.skip != 'true' }}
         env:
           PKG: ${{ steps.version.outputs.name }}@${{ steps.version.outputs.version }}
           REGISTRY: ${{ inputs.registry }}
@@ -188,68 +146,3 @@ jobs:
           found=$(npm view "$PKG" version --registry="$REGISTRY" --prefer-online | tail -1)
           echo "Nexus reports: $found"
           [ -n "$found" ]
-
-      - name: Collect bumped package files
-        id: diff
-        if: ${{ always() && inputs.push-changes && !inputs.dry-run && steps.publish.outcome == 'success' }}
-        env:
-          PROJECT: ${{ matrix.project }}
-        run: |
-          mkdir -p "changes/$PROJECT"
-          cp "$PROJECT/package.json" "$PROJECT/package-lock.json" "changes/$PROJECT/"
-          echo "changed=true" >> "$GITHUB_OUTPUT"
-
-      - name: Upload bumped package files
-        if: ${{ always() && steps.diff.outputs.changed == 'true' }}
-        uses: actions/upload-artifact@v4
-        with:
-          name: npm-publish-${{ github.run_id }}-${{ inputs.phase-label }}-${{ matrix.project }}
-          path: changes
-          retention-days: 3
-
-  push-changes:
-    name: Push version bumps
-    needs: publish
-    if: ${{ always() && inputs.push-changes && !inputs.dry-run && needs.publish.result != 'skipped' }}
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    steps:
-      - name: Check out repository code
-        uses: actions/checkout@v4
-
-      - name: Download bumped package files
-        uses: actions/download-artifact@v4
-        with:
-          pattern: npm-publish-${{ github.run_id }}-${{ inputs.phase-label }}-*
-          path: changes
-          merge-multiple: true
-        continue-on-error: true
-
-      - name: Commit and push
-        env:
-          BRANCH: ${{ inputs.branch-name != '' && inputs.branch-name || format('chore/npm-publish-{0}', github.run_id) }}
-          LABEL: ${{ inputs.phase-label }}
-        run: |
-          if [ ! -d changes ] || [ -z "$(ls -A changes)" ]; then
-            echo "No published packages to record."
-            exit 0
-          fi
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git fetch origin
-          if git ls-remote --exit-code --heads origin "$BRANCH" >/dev/null 2>&1; then
-            git checkout -B "$BRANCH" "origin/$BRANCH"
-          else
-            git checkout -b "$BRANCH"
-          fi
-          cp -R changes/. .
-          rm -rf changes
-          git add -- '*/package.json' '*/package-lock.json'
-          if git diff --cached --quiet; then
-            echo "Nothing changed on $BRANCH."
-            exit 0
-          fi
-          git commit -m "chore: bump and publish packages ($LABEL)"
-          git push origin "$BRANCH"
-          echo "Pushed version bumps to branch: $BRANCH" >> "$GITHUB_STEP_SUMMARY"

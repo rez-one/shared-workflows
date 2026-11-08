@@ -1,6 +1,8 @@
-name: NPM Multi-Project (ci / install / update + build + test)
+name: NPM Multi-Project check (npm ci + build + test)
 
-# Runs one npm action (and optionally build + test) for a list of project folders in parallel.
+# Read-only check: for each project folder (in parallel) run npm ci, build and test from the committed
+# package.json / package-lock.json, then fail the project and annotate the run if anything is wrong.
+# Nothing is written back, pushed or uploaded; any change to package.json / package-lock.json is itself reported.
 # Nexus (nexus.rez1.com) is private, so each job opens the same SSH tunnel the other shared workflows use.
 # The registry and credentials come from the NPMRC secret (full .npmrc content), not from files in the repo.
 on:
@@ -19,11 +21,6 @@ on:
         description: 'JSON array of project folders, e.g. ["blume-button","blume-ui"]'
         required: true
         type: string
-      action:
-        description: 'ci (clean, lockfile-exact), install, or update'
-        required: false
-        default: 'ci'
-        type: string
       run-build:
         description: 'Run "npm run build" when the project defines it'
         required: false
@@ -38,11 +35,6 @@ on:
         required: false
         default: '20'
         type: string
-      update-packages:
-        description: 'Space or comma separated packages for "update"; empty updates everything'
-        required: false
-        default: ''
-        type: string
       sibling-installs:
         description: 'JSON map of project -> folders that need npm ci before its build, e.g. {"portal":["blume-grid-ui"]}'
         required: false
@@ -52,21 +44,6 @@ on:
         required: false
         default: 10
         type: number
-      push-changes:
-        description: 'Push changed package.json / package-lock.json files to branch-name'
-        required: false
-        default: false
-        type: boolean
-      branch-name:
-        description: 'Branch that receives pushed changes (created from the triggering ref if missing)'
-        required: false
-        default: ''
-        type: string
-      phase-label:
-        description: 'Label that keeps artifact names unique when called once per phase'
-        required: false
-        default: 'run'
-        type: string
 
 jobs:
   project:
@@ -133,103 +110,66 @@ jobs:
             echo "::endgroup::"
           done
 
-      - name: npm ${{ inputs.action }}
+      - name: npm ci
+        id: ci
+        continue-on-error: true
         working-directory: ${{ matrix.project }}
-        env:
-          ACTION: ${{ inputs.action }}
-          UPDATE_PACKAGES: ${{ inputs.update-packages }}
         run: |
-          flags="--legacy-peer-deps --no-audit --no-fund"
-          case "$ACTION" in
-            ci)      npm ci $flags ;;
-            install) npm install $flags ;;
-            update)
-              npm install $flags
-              pkgs=$(echo "$UPDATE_PACKAGES" | tr ',' ' ')
-              # shellcheck disable=SC2086
-              npm update $pkgs $flags
-              ;;
-            *) echo "Unknown action '$ACTION' (use ci, install or update)"; exit 1 ;;
-          esac
+          set -o pipefail
+          npm ci --legacy-peer-deps --no-audit --no-fund 2>&1 | tee "$RUNNER_TEMP/ci.log"
 
       - name: Build
-        if: ${{ inputs.run-build }}
+        id: build
+        if: ${{ inputs.run-build && steps.ci.outcome == 'success' }}
+        continue-on-error: true
         working-directory: ${{ matrix.project }}
-        run: npm run build --if-present
+        run: |
+          set -o pipefail
+          npm run build --if-present 2>&1 | tee "$RUNNER_TEMP/build.log"
 
       - name: Test
-        if: ${{ inputs.run-tests }}
+        id: test
+        if: ${{ inputs.run-tests && steps.ci.outcome == 'success' }}
+        continue-on-error: true
         working-directory: ${{ matrix.project }}
         env:
           CI: 'true'
-        run: npm test --if-present -- --passWithNoTests
+        run: |
+          set -o pipefail
+          npm test --if-present -- --passWithNoTests 2>&1 | tee "$RUNNER_TEMP/test.log"
 
-      - name: Collect changed package files
-        id: diff
-        if: ${{ always() && inputs.push-changes }}
+      # Steps above never fail the job themselves, so this one reports every result and fails the project.
+      - name: Report
+        if: ${{ always() }}
+        working-directory: ${{ matrix.project }}
         env:
           PROJECT: ${{ matrix.project }}
+          CI_RESULT: ${{ steps.ci.outcome }}
+          BUILD_RESULT: ${{ steps.build.outcome }}
+          TEST_RESULT: ${{ steps.test.outcome }}
         run: |
-          if git diff --quiet -- "$PROJECT/package.json" "$PROJECT/package-lock.json"; then
-            echo "changed=false" >> "$GITHUB_OUTPUT"
-          else
-            mkdir -p "changes/$PROJECT"
-            cp "$PROJECT/package.json" "$PROJECT/package-lock.json" "changes/$PROJECT/"
-            echo "changed=true" >> "$GITHUB_OUTPUT"
-          fi
+          failed=0
+          modified=$(git status --porcelain -- package.json package-lock.json)
+          {
+            echo "### $PROJECT"
+            echo "| Step | Result |"
+            echo "|---|---|"
+            echo "| npm ci | $CI_RESULT |"
+            echo "| build | $BUILD_RESULT |"
+            echo "| test | $TEST_RESULT |"
+            echo "| package.json / package-lock.json untouched | $([ -z "$modified" ] && echo yes || echo NO) |"
+          } >> "$GITHUB_STEP_SUMMARY"
 
-      - name: Upload changed package files
-        if: ${{ always() && steps.diff.outputs.changed == 'true' }}
-        uses: actions/upload-artifact@v4
-        with:
-          name: npm-${{ github.run_id }}-${{ inputs.phase-label }}-${{ matrix.project }}
-          path: changes
-          retention-days: 3
-
-  push-changes:
-    name: Push changes
-    needs: project
-    if: ${{ always() && inputs.push-changes && needs.project.result != 'skipped' }}
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    steps:
-      - name: Check out repository code
-        uses: actions/checkout@v4
-
-      - name: Download changed package files
-        uses: actions/download-artifact@v4
-        with:
-          pattern: npm-${{ github.run_id }}-${{ inputs.phase-label }}-*
-          path: changes
-          merge-multiple: true
-        continue-on-error: true
-
-      - name: Commit and push
-        env:
-          BRANCH: ${{ inputs.branch-name != '' && inputs.branch-name || format('chore/npm-{0}-{1}', inputs.action, github.run_id) }}
-          ACTION: ${{ inputs.action }}
-          LABEL: ${{ inputs.phase-label }}
-        run: |
-          if [ ! -d changes ] || [ -z "$(ls -A changes)" ]; then
-            echo "No package.json / package-lock.json changes to push."
-            exit 0
+          for step in ci build test; do
+            case $step in ci) result=$CI_RESULT ;; build) result=$BUILD_RESULT ;; test) result=$TEST_RESULT ;; esac
+            if [ "$result" = "failure" ]; then
+              first=$(grep -m3 -E 'npm (error|ERR!)|FAIL|Error:' "$RUNNER_TEMP/$step.log" 2>/dev/null | tr '\n' ' ' | cut -c1-300)
+              echo "::error title=$PROJECT: $step failed::${first:-see the '$step' step log}"
+              failed=1
+            fi
+          done
+          if [ -n "$modified" ]; then
+            echo "::error title=$PROJECT: files were modified::$(echo "$modified" | tr '\n' ' ')"
+            failed=1
           fi
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git fetch origin
-          if git ls-remote --exit-code --heads origin "$BRANCH" >/dev/null 2>&1; then
-            git checkout -B "$BRANCH" "origin/$BRANCH"
-          else
-            git checkout -b "$BRANCH"
-          fi
-          cp -R changes/. .
-          rm -rf changes
-          git add -- '*/package.json' '*/package-lock.json'
-          if git diff --cached --quiet; then
-            echo "Nothing changed on $BRANCH."
-            exit 0
-          fi
-          git commit -m "chore(deps): npm $ACTION ($LABEL)"
-          git push origin "$BRANCH"
-          echo "Pushed to branch: $BRANCH" >> "$GITHUB_STEP_SUMMARY"
+          exit $failed
