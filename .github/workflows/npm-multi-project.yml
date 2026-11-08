@@ -1,0 +1,235 @@
+name: NPM Multi-Project (ci / install / update + build + test)
+
+# Runs one npm action (and optionally build + test) for a list of project folders in parallel.
+# Nexus (nexus.rez1.com) is private, so each job opens the same SSH tunnel the other shared workflows use.
+# The registry and credentials come from the NPMRC secret (full .npmrc content), not from files in the repo.
+on:
+  workflow_call:
+    secrets:
+      SSH_JUMP_HOST_USER:
+        required: true
+      SSH_JUMP_HOST_KEY:
+        required: true
+      SSH_JUMP_HOST_IP:
+        required: true
+      NPMRC:
+        required: true
+    inputs:
+      projects:
+        description: 'JSON array of project folders, e.g. ["blume-button","blume-ui"]'
+        required: true
+        type: string
+      action:
+        description: 'ci (clean, lockfile-exact), install, or update'
+        required: false
+        default: 'ci'
+        type: string
+      run-build:
+        description: 'Run "npm run build" when the project defines it'
+        required: false
+        default: true
+        type: boolean
+      run-tests:
+        description: 'Run "npm test" when the project defines it'
+        required: false
+        default: true
+        type: boolean
+      node-version:
+        required: false
+        default: '20'
+        type: string
+      update-packages:
+        description: 'Space or comma separated packages for "update"; empty updates everything'
+        required: false
+        default: ''
+        type: string
+      sibling-installs:
+        description: 'JSON map of project -> folders that need npm ci before its build, e.g. {"portal":["blume-grid-ui"]}'
+        required: false
+        default: '{}'
+        type: string
+      max-parallel:
+        required: false
+        default: 10
+        type: number
+      push-changes:
+        description: 'Push changed package.json / package-lock.json files to branch-name'
+        required: false
+        default: false
+        type: boolean
+      branch-name:
+        description: 'Branch that receives pushed changes (created from the triggering ref if missing)'
+        required: false
+        default: ''
+        type: string
+      phase-label:
+        description: 'Label that keeps artifact names unique when called once per phase'
+        required: false
+        default: 'run'
+        type: string
+
+jobs:
+  project:
+    name: ${{ matrix.project }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      max-parallel: ${{ inputs.max-parallel }}
+      matrix:
+        project: ${{ fromJSON(inputs.projects) }}
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ inputs.node-version }}
+
+      - name: Configure SSH
+        run: |
+          mkdir -p /home/runner/.ssh/
+          echo "$SSH_KEY" > /home/runner/.ssh/nexus.key
+          chmod 600 /home/runner/.ssh/nexus.key
+          cat >>/home/runner/.ssh/config <<END
+          Host nexus
+            HostName $SSH_HOST
+            User $SSH_USER
+            IdentityFile /home/runner/.ssh/nexus.key
+            StrictHostKeyChecking no
+            ServerAliveInterval 60
+            ServerAliveCountMax 30
+          END
+        env:
+          SSH_USER: ${{ secrets.SSH_JUMP_HOST_USER }}
+          SSH_KEY: ${{ secrets.SSH_JUMP_HOST_KEY }}
+          SSH_HOST: ${{ secrets.SSH_JUMP_HOST_IP }}
+
+      - name: Open Nexus tunnel
+        run: |
+          echo "127.0.0.1 nexus.rez1.com nexus" | sudo tee -a /etc/hosts
+          sudo ssh -4 -fN -F /home/runner/.ssh/config -L0.0.0.0:443:nexus.rez1.com:443 nexus
+          curl -sS -o /dev/null --max-time 30 https://nexus.rez1.com/
+
+      - name: Configure npm from secret
+        env:
+          NPMRC: ${{ secrets.NPMRC }}
+        run: |
+          printf '%s\n' "$NPMRC" > "$HOME/.npmrc"
+          chmod 600 "$HOME/.npmrc"
+          # A committed project .npmrc would override the secret, so drop any from the checkout.
+          find . -name .npmrc -not -path '*/node_modules/*' -delete
+
+      - name: Install sibling build dependencies
+        if: ${{ inputs.run-build }}
+        env:
+          SIBLINGS: ${{ inputs.sibling-installs }}
+          PROJECT: ${{ matrix.project }}
+        run: |
+          for dir in $(echo "$SIBLINGS" | jq -r --arg p "$PROJECT" '.[$p][]?'); do
+            echo "::group::npm ci in sibling $dir"
+            (cd "$dir" && npm ci --legacy-peer-deps --no-audit --no-fund)
+            echo "::endgroup::"
+          done
+
+      - name: npm ${{ inputs.action }}
+        working-directory: ${{ matrix.project }}
+        env:
+          ACTION: ${{ inputs.action }}
+          UPDATE_PACKAGES: ${{ inputs.update-packages }}
+        run: |
+          flags="--legacy-peer-deps --no-audit --no-fund"
+          case "$ACTION" in
+            ci)      npm ci $flags ;;
+            install) npm install $flags ;;
+            update)
+              npm install $flags
+              pkgs=$(echo "$UPDATE_PACKAGES" | tr ',' ' ')
+              # shellcheck disable=SC2086
+              npm update $pkgs $flags
+              ;;
+            *) echo "Unknown action '$ACTION' (use ci, install or update)"; exit 1 ;;
+          esac
+
+      - name: Build
+        if: ${{ inputs.run-build }}
+        working-directory: ${{ matrix.project }}
+        run: npm run build --if-present
+
+      - name: Test
+        if: ${{ inputs.run-tests }}
+        working-directory: ${{ matrix.project }}
+        env:
+          CI: 'true'
+        run: npm test --if-present -- --passWithNoTests
+
+      - name: Collect changed package files
+        id: diff
+        if: ${{ always() && inputs.push-changes }}
+        env:
+          PROJECT: ${{ matrix.project }}
+        run: |
+          if git diff --quiet -- "$PROJECT/package.json" "$PROJECT/package-lock.json"; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            mkdir -p "changes/$PROJECT"
+            cp "$PROJECT/package.json" "$PROJECT/package-lock.json" "changes/$PROJECT/"
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Upload changed package files
+        if: ${{ always() && steps.diff.outputs.changed == 'true' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: npm-${{ github.run_id }}-${{ inputs.phase-label }}-${{ matrix.project }}
+          path: changes
+          retention-days: 3
+
+  push-changes:
+    name: Push changes
+    needs: project
+    if: ${{ always() && inputs.push-changes && needs.project.result != 'skipped' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v4
+
+      - name: Download changed package files
+        uses: actions/download-artifact@v4
+        with:
+          pattern: npm-${{ github.run_id }}-${{ inputs.phase-label }}-*
+          path: changes
+          merge-multiple: true
+        continue-on-error: true
+
+      - name: Commit and push
+        env:
+          BRANCH: ${{ inputs.branch-name != '' && inputs.branch-name || format('chore/npm-{0}-{1}', inputs.action, github.run_id) }}
+          ACTION: ${{ inputs.action }}
+          LABEL: ${{ inputs.phase-label }}
+        run: |
+          if [ ! -d changes ] || [ -z "$(ls -A changes)" ]; then
+            echo "No package.json / package-lock.json changes to push."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch origin
+          if git ls-remote --exit-code --heads origin "$BRANCH" >/dev/null 2>&1; then
+            git checkout -B "$BRANCH" "origin/$BRANCH"
+          else
+            git checkout -b "$BRANCH"
+          fi
+          cp -R changes/. .
+          rm -rf changes
+          git add -- '*/package.json' '*/package-lock.json'
+          if git diff --cached --quiet; then
+            echo "Nothing changed on $BRANCH."
+            exit 0
+          fi
+          git commit -m "chore(deps): npm $ACTION ($LABEL)"
+          git push origin "$BRANCH"
+          echo "Pushed to branch: $BRANCH" >> "$GITHUB_STEP_SUMMARY"
