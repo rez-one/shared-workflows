@@ -83,11 +83,10 @@ jobs:
           SSH_KEY: ${{ secrets.SSH_JUMP_HOST_KEY }}
           SSH_HOST: ${{ secrets.SSH_JUMP_HOST_IP }}
 
-      - name: Open Nexus tunnel
+      - name: Execute ssh port forward
         run: |
-          echo "127.0.0.1 nexus.rez1.com nexus" | sudo tee -a /etc/hosts
+          sudo echo "127.0.0.1 nexus.rez1.com nexus" | sudo tee -a /etc/hosts
           sudo ssh -4 -fN -F /home/runner/.ssh/config -L0.0.0.0:443:nexus.rez1.com:443 nexus
-          curl -sS -o /dev/null --max-time 30 https://nexus.rez1.com/
 
       - name: Configure npm from secret
         env:
@@ -97,6 +96,12 @@ jobs:
           chmod 600 "$HOME/.npmrc"
           # A committed project .npmrc would override the secret, so drop any from the checkout.
           find . -name .npmrc -not -path '*/node_modules/*' -delete
+
+      - name: Check Nexus registry (informational)
+        continue-on-error: true
+        run: |
+          code=$(curl -sS -o /dev/null -w '%{http_code}' --max-time 20 https://nexus.rez1.com/repository/npm/ || true)
+          echo "Nexus registry answered HTTP ${code:-none}"
 
       - name: Install sibling build dependencies
         if: ${{ inputs.run-build }}
