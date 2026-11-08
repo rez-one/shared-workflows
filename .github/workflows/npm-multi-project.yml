@@ -134,9 +134,10 @@ jobs:
           node -e '
             const { spawnSync } = require("child_process");
             const j = require("./package.json");
-            const lock = require("./package-lock.json").packages;
+            const fs = require("fs");
+            // Lockfile entries can be flagged peer and still not installed under --legacy-peer-deps, so check disk.
             const specs = Object.entries(j.peerDependencies || {})
-              .filter(([n]) => !lock["node_modules/" + n])
+              .filter(([n]) => !fs.existsSync("node_modules/" + n))
               .map(([n, v]) => n + "@" + v);
             if (!specs.length) { console.log("No missing peer dependencies."); process.exit(0); }
             console.log("Installing peers (not saved): " + specs.join(" "));
