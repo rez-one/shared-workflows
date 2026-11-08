@@ -123,6 +123,27 @@ jobs:
           set -o pipefail
           npm ci --legacy-peer-deps --no-audit --no-fund 2>&1 | tee "$RUNNER_TEMP/ci.log"
 
+      # --legacy-peer-deps skips peers and npm ignores peer specs while it is set, so install them in a separate run without it.
+      - name: Install missing peer dependencies (not saved)
+        id: peers
+        if: ${{ steps.ci.outcome == 'success' }}
+        continue-on-error: true
+        working-directory: ${{ matrix.project }}
+        run: |
+          set -o pipefail
+          node -e '
+            const { spawnSync } = require("child_process");
+            const fs = require("fs");
+            const j = require("./package.json");
+            const specs = Object.entries(j.peerDependencies || {})
+              .filter(([n]) => !fs.existsSync("node_modules/" + n))
+              .map(([n, v]) => n + "@" + v);
+            if (!specs.length) { console.log("No missing peer dependencies."); process.exit(0); }
+            console.log("Installing peers (not saved): " + specs.join(" "));
+            const r = spawnSync("npm", ["install", "--no-save", "--no-audit", "--no-fund", ...specs], { stdio: "inherit" });
+            process.exit(r.status === null ? 1 : r.status);
+          ' 2>&1 | tee "$RUNNER_TEMP/peers.log"
+
       - name: Build
         id: build
         if: ${{ inputs.run-build && steps.ci.outcome == 'success' }}
@@ -150,6 +171,7 @@ jobs:
         env:
           PROJECT: ${{ matrix.project }}
           CI_RESULT: ${{ steps.ci.outcome }}
+          PEERS_RESULT: ${{ steps.peers.outcome }}
           BUILD_RESULT: ${{ steps.build.outcome }}
           TEST_RESULT: ${{ steps.test.outcome }}
         run: |
@@ -160,13 +182,14 @@ jobs:
             echo "| Step | Result |"
             echo "|---|---|"
             echo "| npm ci | $CI_RESULT |"
+            echo "| peer deps | $PEERS_RESULT |"
             echo "| build | $BUILD_RESULT |"
             echo "| test | $TEST_RESULT |"
             echo "| package.json / package-lock.json untouched | $([ -z "$modified" ] && echo yes || echo NO) |"
           } >> "$GITHUB_STEP_SUMMARY"
 
-          for step in ci build test; do
-            case $step in ci) result=$CI_RESULT ;; build) result=$BUILD_RESULT ;; test) result=$TEST_RESULT ;; esac
+          for step in ci peers build test; do
+            case $step in ci) result=$CI_RESULT ;; peers) result=$PEERS_RESULT ;; build) result=$BUILD_RESULT ;; test) result=$TEST_RESULT ;; esac
             if [ "$result" = "failure" ]; then
               first=$(grep -m3 -E 'npm (error|ERR!)|FAIL|Error:' "$RUNNER_TEMP/$step.log" 2>/dev/null | tr '\n' ' ' | cut -c1-300)
               echo "::error title=$PROJECT: $step failed::${first:-see the '$step' step log}"
