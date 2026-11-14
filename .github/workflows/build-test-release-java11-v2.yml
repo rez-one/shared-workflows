@@ -49,6 +49,12 @@ on:
         required: false
       CORE_APP_PRIVATE_KEY:
         required: false
+      CORE_APP_INSTALL_ID:
+        required: false
+      SSH_JUMP_HOST_KNOWN_HOSTS:
+        required: false
+      MYSQL_DB_PASSWORD:
+        required: false
     inputs:
       branchesToPublishArtifacts:
         description: 'Branches To Publish Artifacts'
@@ -98,8 +104,18 @@ jobs:
     env:
       ORG_GRADLE_PROJECT_nexusUsername: ${{ secrets.NEXUS_USERNAME }}
       ORG_GRADLE_PROJECT_nexusPassword: ${{ secrets.NEXUS_PASSWORD }}
+      MYSQL_DB_PASSWORD: ${{ secrets.MYSQL_DB_PASSWORD }}
+      CORE_APP_ID: ${{ secrets.CORE_APP_ID }}
+      CORE_APP_PRIVATE_KEY: ${{ secrets.CORE_APP_PRIVATE_KEY }}
+      CORE_APP_INSTALL_ID: ${{ secrets.CORE_APP_INSTALL_ID }}
       CI: false
     steps:
+      - name: Trust SSH jump host
+        env:
+          KNOWN_HOSTS: ${{ secrets.SSH_JUMP_HOST_KNOWN_HOSTS }}
+        run: |
+          mkdir -p ~/.ssh
+          echo "$KNOWN_HOSTS" >> ~/.ssh/known_hosts
       - name: Remove unnecessary files
         run: |
           sudo rm -rf /usr/share/dotnet
